@@ -2,6 +2,10 @@
 using ImageEditor.Models;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ImageEditor.ViewModels
@@ -20,11 +24,13 @@ namespace ImageEditor.ViewModels
 
         public RelayCommand AddImageCommand { get; }
         public RelayCommand SelectLayerCommand { get; }
+        public RelayCommand SaveCommand { get; }
 
         public MainViewModel()
         {
             AddImageCommand = new RelayCommand(AddImage);
             SelectLayerCommand = new RelayCommand(o => SelectLayer(o));
+            SaveCommand = new RelayCommand(SaveCollage);
         }
 
         private void AddImage()
@@ -58,6 +64,57 @@ namespace ImageEditor.ViewModels
                 layer.IsSelected = true;
                 SelectedLayer = layer;
             }
+        }
+        private void SaveCollage()
+        {
+            SaveFileDialog dlg = new SaveFileDialog();
+            dlg.Filter =
+                "PNG (*.png)|*.png|JPEG (*.jpg)|*.jpg|Bitmap (*.bmp)|*.bmp";
+
+            if (dlg.ShowDialog() != true)
+                return;
+
+            // Canvas береться через MainWindow (передамо через статичний доступ)
+            var canvas = Application.Current.MainWindow.FindName("MainCanvas") as Canvas;
+            if (canvas == null)
+            {
+                MessageBox.Show("Canvas не знайдено!");
+                return;
+            }
+
+            // Рендер у зображення
+            RenderTargetBitmap rtb = new RenderTargetBitmap(
+                (int)canvas.Width,
+                (int)canvas.Height,
+                96, 96, PixelFormats.Pbgra32);
+
+            rtb.Render(canvas);
+
+            BitmapEncoder encoder;
+
+            string ext = System.IO.Path.GetExtension(dlg.FileName).ToLower();
+
+            switch (ext)
+            {
+                case ".jpg":
+                    encoder = new JpegBitmapEncoder();
+                    break;
+                case ".bmp":
+                    encoder = new BmpBitmapEncoder();
+                    break;
+                default:
+                    encoder = new PngBitmapEncoder();
+                    break;
+            }
+
+            encoder.Frames.Add(BitmapFrame.Create(rtb));
+
+            using (FileStream fs = new FileStream(dlg.FileName, FileMode.Create))
+            {
+                encoder.Save(fs);
+            }
+
+            MessageBox.Show("Файл збережено успішно!");
         }
     }
 }

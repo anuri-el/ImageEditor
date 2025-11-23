@@ -18,10 +18,11 @@
 
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Background="#ddd">
             <Button Content="Відкрити зображення" Command="{Binding AddImageCommand}" Margin="5"/>
+            <Button Content="Зберегти" Command="{Binding SaveCommand}" Margin="5"/>
         </StackPanel>
 
         <ScrollViewer>
-            <Canvas Background="#333" Width="1800" Height="1200">
+            <Canvas Background="#333" Width="1800" Height="1200" x:Name="MainCanvas">
 
                 <ItemsControl ItemsSource="{Binding Layers}">
                     <ItemsControl.ItemsPanel>
