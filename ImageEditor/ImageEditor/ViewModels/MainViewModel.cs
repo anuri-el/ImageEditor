@@ -36,7 +36,7 @@ namespace ImageEditor.ViewModels
         private void AddImage()
         {
             var dialog = new OpenFileDialog();
-            dialog.Filter = "Image Files|*.png;*.jpg;*.bmp";
+            dialog.Filter = "Image Files|*.png;*.jpg;*.bmp;*.tiff;*.gif";
 
             if (dialog.ShowDialog() == true)
             {
@@ -69,12 +69,11 @@ namespace ImageEditor.ViewModels
         {
             SaveFileDialog dlg = new SaveFileDialog();
             dlg.Filter =
-                "PNG (*.png)|*.png|JPEG (*.jpg)|*.jpg|Bitmap (*.bmp)|*.bmp";
+                "PNG (*.png)|*.png|JPEG (*.jpg)|*.jpg|Bitmap (*.bmp)|*.bmp|TIFF (*.tiff)|*.tiff|GIF (*.gif)|*.gif";
 
             if (dlg.ShowDialog() != true)
                 return;
 
-            // Canvas береться через MainWindow (передамо через статичний доступ)
             var canvas = Application.Current.MainWindow.FindName("MainCanvas") as Canvas;
             if (canvas == null)
             {
@@ -82,13 +81,49 @@ namespace ImageEditor.ViewModels
                 return;
             }
 
-            // Рендер у зображення
-            RenderTargetBitmap rtb = new RenderTargetBitmap(
-                (int)canvas.Width,
-                (int)canvas.Height,
-                96, 96, PixelFormats.Pbgra32);
+            double minX = double.MaxValue, minY = double.MaxValue;
+            double maxX = 0, maxY = 0;
 
-            rtb.Render(canvas);
+            foreach (var layer in Layers)
+            {
+                if (layer.Image == null) continue;
+
+                double right = layer.X + layer.Image.PixelWidth;
+                double bottom = layer.Y + layer.Image.PixelHeight;
+
+                if (layer.X < minX) minX = layer.X;
+                if (layer.Y < minY) minY = layer.Y;
+
+                if (right > maxX) maxX = right;
+                if (bottom > maxY) maxY = bottom;
+            }
+
+            if (minX == double.MaxValue)
+                return;
+
+            double finalWidth = maxX - minX;
+            double finalHeight = maxY - minY;
+
+            if (finalWidth <= 0 || finalHeight <= 0)
+            {
+                MessageBox.Show("Шари порожні.");
+                return;
+            }
+
+            RenderTargetBitmap rtb = new RenderTargetBitmap(
+                (int)finalWidth,
+                (int)finalHeight,
+                96, 96,
+                PixelFormats.Pbgra32);
+
+            var dv = new DrawingVisual();
+            using (var ctx = dv.RenderOpen())
+            {
+                ctx.PushTransform(new TranslateTransform(-minX, -minY));
+                ctx.DrawRectangle(new VisualBrush(canvas), null, new Rect(new Point(), new Size(canvas.Width, canvas.Height)));
+            }
+
+            rtb.Render(dv);
 
             BitmapEncoder encoder;
 
@@ -102,6 +137,12 @@ namespace ImageEditor.ViewModels
                 case ".bmp":
                     encoder = new BmpBitmapEncoder();
                     break;
+                case ".tiff":
+                    encoder = new TiffBitmapEncoder();
+                    break;
+                case ".gif":
+                    encoder = new GifBitmapEncoder();
+                    break;
                 default:
                     encoder = new PngBitmapEncoder();
                     break;
@@ -110,9 +151,7 @@ namespace ImageEditor.ViewModels
             encoder.Frames.Add(BitmapFrame.Create(rtb));
 
             using (FileStream fs = new FileStream(dlg.FileName, FileMode.Create))
-            {
                 encoder.Save(fs);
-            }
 
             MessageBox.Show("Файл збережено успішно!");
         }
