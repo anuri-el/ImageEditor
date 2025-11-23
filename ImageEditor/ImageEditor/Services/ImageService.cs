@@ -17,7 +17,7 @@ namespace ImageEditor.Services
             {
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad; // важливо: файл не блокується
+                bitmap.CacheOption = BitmapCacheOption.OnLoad; // файл не блокується
                 bitmap.UriSource = new Uri(dialog.FileName);
                 bitmap.EndInit();
                 bitmap.Freeze(); // для потокобезпеки

@@ -4,23 +4,44 @@ namespace ImageEditor.Commands
 {
     public class RelayCommand : ICommand
     {
-        private readonly Action<object> _execute;
-        private readonly Func<object, bool>? _canExecute;
+        private readonly Action _execute;
+        private readonly Func<bool> _canExecute;
 
-        public RelayCommand(Action<object> execute, Func<object, bool>? canExecute = null)
+        private readonly Action<object> _executeParam;
+        private readonly Func<object, bool> _canExecuteParam;
+
+        public RelayCommand(Action execute, Func<bool> canExecute = null)
         {
             _execute = execute;
             _canExecute = canExecute;
         }
 
-        public bool CanExecute(object? parameter) =>
-            _canExecute == null || _canExecute(parameter);
+        public RelayCommand(Action<object> execute, Func<object, bool> canExecute = null)
+        {
+            _executeParam = execute;
+            _canExecuteParam = canExecute;
+        }
 
-        public void Execute(object? parameter) =>
-            _execute(parameter);
+        public bool CanExecute(object parameter)
+        {
+            if (_execute != null)
+                return _canExecute == null || _canExecute();
 
-        public event EventHandler? CanExecuteChanged;
-        public void RaiseCanExecuteChanged() =>
-            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+            return _canExecuteParam == null || _canExecuteParam(parameter);
+        }
+
+        public void Execute(object parameter)
+        {
+            if (_execute != null)
+                _execute();
+            else
+                _executeParam(parameter);
+        }
+
+        public event EventHandler CanExecuteChanged
+        {
+            add => CommandManager.RequerySuggested += value;
+            remove => CommandManager.RequerySuggested -= value;
+        }
     }
 }

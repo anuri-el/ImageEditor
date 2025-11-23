@@ -5,40 +5,56 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ImageEditor"
         xmlns:vm="clr-namespace:ImageEditor.ViewModels"
+        xmlns:conv="clr-namespace:ImageEditor.Converters"
         mc:Ignorable="d"
         Title="Image Editor" 
         Height="600" Width="900">
-    
+
     <Window.DataContext>
-        <vm:EditorViewModel />
+        <vm:MainViewModel />
     </Window.DataContext>
 
-    <Grid Margin="10">
+    <DockPanel>
 
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-
-        <!-- ======== Верхня панель ======== -->
-        <StackPanel Orientation="Horizontal" Grid.Row="0">
-            <Button Content="Відкрити зображення"
-                    Command="{Binding OpenImageCommand}"
-                    Padding="8,4"
-                    Margin="0,0,10,0"/>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Background="#ddd">
+            <Button Content="Відкрити зображення" Command="{Binding AddImageCommand}" Margin="5"/>
         </StackPanel>
 
-        <!-- ======== Канва ======== -->
-        <Border Grid.Row="1"
-                BorderThickness="1"
-                BorderBrush="Gray"
-                Background="#EEE">
+        <ScrollViewer>
+            <Canvas Background="#333" Width="1800" Height="1200">
 
-            <Image Source="{Binding LoadedImage}"
-                   Stretch="Uniform"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"/>
-        </Border>
+                <ItemsControl ItemsSource="{Binding Layers}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <Canvas />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
 
-    </Grid>
+                    <ItemsControl.ItemContainerStyle>
+                        <Style TargetType="ContentPresenter">
+                            <Setter Property="Canvas.Left" Value="{Binding X}" />
+                            <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                        </Style>
+                    </ItemsControl.ItemContainerStyle>
+
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="{Binding IsSelected, Converter={StaticResource SelBorder}}"
+                                    BorderThickness="2">
+                                <Image Source="{Binding Image}">
+                                    <Image.InputBindings>
+                                        <MouseBinding Gesture="LeftClick"
+                                                      Command="{Binding DataContext.SelectLayerCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      CommandParameter="{Binding}" />
+                                    </Image.InputBindings>
+                                </Image>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+
+                </ItemsControl>
+
+            </Canvas>
+        </ScrollViewer>
+    </DockPanel>
 </Window>

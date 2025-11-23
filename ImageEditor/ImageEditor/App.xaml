@@ -2,8 +2,9 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:ImageEditor"
+             xmlns:conv="clr-namespace:ImageEditor.Converters"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <conv:SelBorderConverter x:Key="SelBorder" />
     </Application.Resources>
 </Application>
