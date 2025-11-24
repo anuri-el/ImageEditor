@@ -8,6 +8,10 @@ namespace ImageEditor.Models
         public string FilePath { get; set; }
         public BitmapImage Image { get; set; }
 
+        // Оригінальні розміри для інформації
+        public double OriginalWidth { get; set; }
+        public double OriginalHeight { get; set; }
+
         private double _x;
         public double X
         {

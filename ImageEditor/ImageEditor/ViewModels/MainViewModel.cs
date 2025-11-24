@@ -54,6 +54,28 @@ namespace ImageEditor.ViewModels
             }
         }
 
+        private double _canvasWidth = 1500;
+        public double CanvasWidth
+        {
+            get => _canvasWidth;
+            set
+            {
+                _canvasWidth = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private double _canvasHeight = 1000;
+        public double CanvasHeight
+        {
+            get => _canvasHeight;
+            set
+            {
+                _canvasHeight = value;
+                OnPropertyChanged();
+            }
+        }
+
         public event Action LayerSelected;
         public event Action RotationChanged;
 
@@ -82,16 +104,62 @@ namespace ImageEditor.ViewModels
             {
                 var img = new BitmapImage(new System.Uri(dialog.FileName));
 
+                // Масштабуємо зображення, якщо воно завелике
+                double scale = CalculateScaleToFit(img.PixelWidth, img.PixelHeight);
+
+                int newWidth = (int)(img.PixelWidth * scale);
+                int newHeight = (int)(img.PixelHeight * scale);
+
+                BitmapImage scaledImg = img;
+
+                // Якщо потрібно масштабування
+                if (scale < 1.0)
+                {
+                    scaledImg = new BitmapImage();
+                    scaledImg.BeginInit();
+                    scaledImg.UriSource = new System.Uri(dialog.FileName);
+                    scaledImg.DecodePixelWidth = newWidth;
+                    scaledImg.DecodePixelHeight = newHeight;
+                    scaledImg.CacheOption = BitmapCacheOption.OnLoad;
+                    scaledImg.EndInit();
+                    scaledImg.Freeze();
+                }
+
                 var layer = new LayerModel
                 {
-                    Image = img,
-                    X = 0,
-                    Y = 0
+                    Image = scaledImg,
+                    X = (CanvasWidth - scaledImg.PixelWidth) / 2, // Центруємо
+                    Y = (CanvasHeight - scaledImg.PixelHeight) / 2,
+                    OriginalWidth = img.PixelWidth,
+                    OriginalHeight = img.PixelHeight
                 };
 
                 Layers.Add(layer);
                 SelectedLayer = layer;
             }
+        }
+
+        // Розраховуємо масштаб для вписування в полотно
+        private double CalculateScaleToFit(double width, double height)
+        {
+            // Залишаємо 10% запасу по краях
+            double maxWidth = CanvasWidth * 0.9;
+            double maxHeight = CanvasHeight * 0.9;
+
+            double scaleX = maxWidth / width;
+            double scaleY = maxHeight / height;
+
+            double scale = Math.Min(scaleX, scaleY);
+
+            // Якщо зображення менше за полотно, не збільшуємо
+            return Math.Min(scale, 1.0);
+        }
+
+        // Оновлення розміру полотна при зміні розміру вікна
+        public void UpdateCanvasSize(double availableWidth, double availableHeight)
+        {
+            CanvasWidth = Math.Max(800, availableWidth);
+            CanvasHeight = Math.Max(600, availableHeight);
         }
 
         private void SelectLayer(object obj)
@@ -161,7 +229,7 @@ namespace ImageEditor.ViewModels
             using (var ctx = dv.RenderOpen())
             {
                 ctx.PushTransform(new TranslateTransform(-minX, -minY));
-                ctx.DrawRectangle(new VisualBrush(canvas), null, new Rect(new Point(), new Size(canvas.Width, canvas.Height)));
+                ctx.DrawRectangle(new VisualBrush(canvas), null, new Rect(new Point(), new Size(canvas.ActualWidth, canvas.ActualHeight)));
             }
 
             rtb.Render(dv);

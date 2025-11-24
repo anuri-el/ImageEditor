@@ -16,6 +16,12 @@ namespace ImageEditor
             ViewModel.RotationChanged += UpdateSelectionRect;
         }
 
+        private void ScrollViewer_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            // Оновлюємо розмір Canvas при зміні розміру ScrollViewer
+            ViewModel.UpdateCanvasSize(e.NewSize.Width, e.NewSize.Height);
+        }
+
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             Point click = e.GetPosition(EditorCanvas);

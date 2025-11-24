@@ -13,59 +13,6 @@
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
-<!--
-    <DockPanel>
-
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Background="#ddd">
-            <Button Content="Відкрити зображення" Command="{Binding AddImageCommand}" Margin="5"/>
-            <Button Content="Зберегти" Command="{Binding SaveCommand}" Margin="5"/>
-            <Button Content="Поворот ←" Command="{Binding RotateLeftCommand}" Margin="5"/>
-            <Button Content="Поворот →" Command="{Binding RotateRightCommand}" Margin="5"/>
-        </StackPanel>
-
-        <ScrollViewer>
-            <Canvas 
-                Height="1200"
-                Width="1500"
-                x:Name="MainCanvas" 
-                Background="#333"
-                MouseDown="Canvas_MouseDown">
-
-                <ItemsControl ItemsSource="{Binding Layers}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <Canvas />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-
-                    <ItemsControl.ItemContainerStyle>
-                        <Style TargetType="ContentPresenter">
-                            <Setter Property="Canvas.Left" Value="{Binding X}" />
-                            <Setter Property="Canvas.Top" Value="{Binding Y}" />
-                        </Style>
-                    </ItemsControl.ItemContainerStyle>
-
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border BorderBrush="{Binding IsSelected, Converter={StaticResource SelBorder}}"
-                                    BorderThickness="2">
-                                <Image Source="{Binding Image}">
-                                    <Image.RenderTransform>
-                                        <RotateTransform Angle="{Binding Angle}"
-                                                         CenterX="{Binding Image.PixelWidth, Converter={StaticResource HalfValue}}"
-                                                         CenterY="{Binding Image.PixelHeight, Converter={StaticResource HalfValue}}"/>
-                                    </Image.RenderTransform>
-                                </Image>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-
-                </ItemsControl>
-
-            </Canvas>
-        </ScrollViewer>
-    </DockPanel>
-  -->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -159,16 +106,18 @@
 
         <!-- Робоча область зі скролом -->
         <ScrollViewer Grid.Row="2" 
+                      x:Name="MainScrollViewer"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
-                      Background="#555">
+                      Background="#555"
+                      SizeChanged="ScrollViewer_SizeChanged">
 
             <!-- CANVAS зображень -->
             <Canvas x:Name="EditorCanvas"
                     Background="LightGray"
                     MouseDown="Canvas_MouseDown"
-                    Height="2000"
-                    Width="2000">
+                    Width="{Binding CanvasWidth}"
+                    Height="{Binding CanvasHeight}">
 
                 <ItemsControl ItemsSource="{Binding Layers}"
                               HorizontalAlignment="Left"
@@ -201,7 +150,7 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <!-- Жовта рамка для вибраного шару - тепер ВСЕРЕДИНІ Canvas -->
+                <!-- Жовта рамка для вибраного шару -->
                 <Rectangle x:Name="SelectionRect"
                            Stroke="Yellow"
                            StrokeThickness="3"
