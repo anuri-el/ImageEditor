@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -28,12 +29,16 @@ namespace ImageEditor.ViewModels
         }
 
         public event Action LayerSelected;
+        public event Action RotationChanged;
+
 
         public RelayCommand AddImageCommand { get; }
         public RelayCommand SelectLayerCommand { get; }
         public RelayCommand SaveCommand { get; }
-        public RelayCommand RotateRightCommand { get; }
-        public RelayCommand RotateLeftCommand { get; }
+        //public RelayCommand RotateRightCommand { get; }
+        //public RelayCommand RotateLeftCommand { get; }
+        public ICommand RotateLeftCommand { get; }
+        public ICommand RotateRightCommand { get; }
 
         public MainViewModel()
         {
@@ -41,8 +46,10 @@ namespace ImageEditor.ViewModels
             SelectLayerCommand = new RelayCommand(o => SelectLayer(o));
             SaveCommand = new RelayCommand(SaveCollage);
 
-            RotateRightCommand = new RelayCommand(RotateRight);
-            RotateLeftCommand = new RelayCommand(RotateLeft);
+            //RotateRightCommand = new RelayCommand(RotateRight);
+            //RotateLeftCommand = new RelayCommand(RotateLeft);
+            RotateLeftCommand = new RelayCommand(_ => Rotate(-90));
+            RotateRightCommand = new RelayCommand(_ => Rotate(90));
         }
 
         private void AddImage()
@@ -71,12 +78,15 @@ namespace ImageEditor.ViewModels
             if (obj is LayerModel layer)
             {
                 foreach (var l in Layers)
+                {
                     l.IsSelected = false;
+                }
 
                 layer.IsSelected = true;
                 SelectedLayer = layer;
             }
         }
+
         private void SaveCollage()
         {
             SaveFileDialog dlg = new SaveFileDialog();
@@ -168,16 +178,33 @@ namespace ImageEditor.ViewModels
             MessageBox.Show("Файл збережено успішно!");
         }
 
-        private void RotateRight()
-        {
-            if (SelectedLayer != null)
-                SelectedLayer.Angle += 90;
-        }
+        //private void RotateRight()
+        //{
+        //    if (SelectedLayer != null)
+        //        SelectedLayer.Angle += 90;
+        //}
 
-        private void RotateLeft()
+        //private void RotateLeft()
+        //{
+        //    if (SelectedLayer != null)
+        //        SelectedLayer.Angle -= 90;
+        //}
+        private void Rotate(int angle)
         {
             if (SelectedLayer != null)
-                SelectedLayer.Angle -= 90;
+            {
+                // Це тепер спрацює, бо LayerModel має INotifyPropertyChanged
+                SelectedLayer.Angle = (SelectedLayer.Angle + angle) % 360;
+            }
+            else
+            {
+                foreach (var layer in Layers)
+                {
+                    layer.Angle = (layer.Angle + angle) % 360;
+                }
+            }
+
+            RotationChanged?.Invoke();
         }
     }
 }

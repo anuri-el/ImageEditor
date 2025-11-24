@@ -1,4 +1,5 @@
-﻿using ImageEditor.ViewModels;
+﻿using ImageEditor.Models;
+using ImageEditor.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -13,46 +14,34 @@ namespace ImageEditor
         {
             InitializeComponent();
 
-            // Підписуємося на подію вибору шару
             ViewModel.LayerSelected += UpdateSelectionRect;
+            ViewModel.RotationChanged += UpdateSelectionRect;
         }
-
-        // -------------------------------
-        // ВИБІР ШАРУ КЛІКОМ ПО CANVAS
-        // -------------------------------
 
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             Point click = e.GetPosition(EditorCanvas);
 
-            // Перебираємо шари з кінця (верхні перевіряємо першими)
-            for (int i = ViewModel.Layers.Count - 1; i >= 0; i--)
+            foreach (var item in EditorCanvas.Children.OfType<FrameworkElement>())
             {
-                var layer = ViewModel.Layers[i];
-                var img = layer.Image;
-
-                if (img == null) continue;
-
-                double left = layer.X;
-                double top = layer.Y;
-                double right = left + img.PixelWidth;
-                double bottom = top + img.PixelHeight;
-
-                if (click.X >= left && click.X <= right &&
-                    click.Y >= top && click.Y <= bottom)
+                if (item.DataContext is LayerModel layer)
                 {
-                    ViewModel.SelectedLayer = layer;
-                    return;
+                    var transform = item.TransformToVisual(EditorCanvas);
+                    Point topLeft = transform.Transform(new Point(0, 0));
+                    Point bottomRight = transform.Transform(new Point(item.ActualWidth, item.ActualHeight));
+
+                    Rect rect = new Rect(topLeft, bottomRight);
+
+                    if (rect.Contains(click))
+                    {
+                        ViewModel.SelectedLayer = layer;
+                        return;
+                    }
                 }
             }
 
-            // Клік поза всіма — зняти виділення
             ViewModel.SelectedLayer = null;
         }
-
-        // -------------------------------
-        // ОНОВЛЕННЯ РАМКИ ВИДІЛЕННЯ
-        // -------------------------------
 
         private void UpdateSelectionRect()
         {
@@ -66,13 +55,24 @@ namespace ImageEditor
 
             SelectionRect.Visibility = Visibility.Visible;
 
-            // Встановлюємо позицію
-            Canvas.SetLeft(SelectionRect, layer.X);
-            Canvas.SetTop(SelectionRect, layer.Y);
+            double w = layer.Image.PixelWidth;
+            double h = layer.Image.PixelHeight;
+            double angle = layer.Angle;
 
-            // Встановлюємо розміри
-            SelectionRect.Width = layer.Image.PixelWidth;
-            SelectionRect.Height = layer.Image.PixelHeight;
+            double rad = Math.PI * angle / 180.0;
+
+            double w2 = Math.Abs(w * Math.Cos(rad)) + Math.Abs(h * Math.Sin(rad));
+            double h2 = Math.Abs(w * Math.Sin(rad)) + Math.Abs(h * Math.Cos(rad));
+
+            SelectionRect.Width = w2;
+            SelectionRect.Height = h2;
+
+            Canvas.SetLeft(SelectionRect, layer.X - (w2 - w) / 2);
+            Canvas.SetTop(SelectionRect, layer.Y - (h2 - h) / 2);
+
+            SelRotate.Angle = angle;
+            SelRotate.CenterX = SelectionRect.Width / 2;
+            SelRotate.CenterY = SelectionRect.Height / 2;
         }
     }
 }

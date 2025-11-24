@@ -71,7 +71,7 @@
         <!-- Верхня панель кнопок -->
         <StackPanel Orientation="Horizontal" Background="#333" Height="50"
                     VerticalAlignment="Top">
-            <Button Content="Відкрити" Width="100" Margin="10"
+            <Button Content="Відкрити1" Width="100" Margin="10"
                     Command="{Binding AddImageCommand}" />
 
             <Button Content="Зберегти" Width="100" Margin="10"
@@ -96,7 +96,9 @@
                     Height="1000"
                     Width="1500">
 
-                <ItemsControl ItemsSource="{Binding Layers}">
+                <ItemsControl ItemsSource="{Binding Layers}"
+                              HorizontalAlignment="Left"
+                              VerticalAlignment="Top">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <Canvas />
@@ -112,9 +114,11 @@
 
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Image Source="{Binding Image}">
+                            <Image Source="{Binding Image}" Stretch="None">
                                 <Image.RenderTransform>
-                                    <RotateTransform Angle="{Binding Angle}" />
+                                    <RotateTransform Angle="{Binding Angle}"
+                                                     CenterX="{Binding Image.PixelWidth, Converter={StaticResource HalfValue}}"
+                                                     CenterY="{Binding Image.PixelHeight, Converter={StaticResource HalfValue}}"/>
                                 </Image.RenderTransform>
                             </Image>
                         </DataTemplate>
@@ -125,10 +129,14 @@
 
             <!-- Жовта рамка для вибраного шару -->
             <Rectangle x:Name="SelectionRect"
-                       Stroke="Yellow"
-                       StrokeThickness="3"
-                       Visibility="Collapsed"
-                       IsHitTestVisible="False"/>
+                           Stroke="Yellow"
+                           StrokeThickness="3"
+                           Visibility="Collapsed"
+                           IsHitTestVisible="False">
+                <Rectangle.RenderTransform>
+                    <RotateTransform x:Name="SelRotate" />
+                </Rectangle.RenderTransform>
+            </Rectangle>
 
         </Grid>
 
