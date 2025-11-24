@@ -13,8 +13,10 @@
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
+
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -38,18 +40,29 @@
             <Button Content="Поворот ←90°" 
                     Width="120" 
                     Margin="10"
-                    Command="{Binding RotateLeftCommand}" />
+                    Command="{Binding RotateLeftCommand}"
+                    IsEnabled="{Binding IsCropMode, Converter={StaticResource InverseBool}}" />
 
             <Button Content="Поворот 90°→" 
                     Width="120" 
                     Margin="10"
-                    Command="{Binding RotateRightCommand}" />
+                    Command="{Binding RotateRightCommand}"
+                    IsEnabled="{Binding IsCropMode, Converter={StaticResource InverseBool}}" />
+
+            <Separator Width="2" Margin="10,5" Background="#555"/>
+
+            <Button Content="Crop" 
+                    Width="100" 
+                    Margin="10"
+                    Command="{Binding StartCropCommand}"
+                    IsEnabled="{Binding IsCropMode, Converter={StaticResource InverseBool}}" />
         </StackPanel>
 
         <!-- Панель слайдера обертання -->
         <Border Grid.Row="1" 
                 Background="#444" 
-                Padding="10">
+                Padding="10"
+                Visibility="{Binding IsCropMode, Converter={StaticResource InverseBoolToVis}}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -104,65 +117,224 @@
             </Grid>
         </Border>
 
+        <!-- Панель Crop -->
+        <Border Grid.Row="2" 
+                Background="#2C5F2D" 
+                Padding="10"
+                Visibility="{Binding IsCropMode, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" 
+                           Text="Співвідношення:" 
+                           VerticalAlignment="Center"
+                           Foreground="White"
+                           Margin="0,0,10,0"
+                           FontWeight="Bold"/>
+
+                <ComboBox Grid.Column="1"
+                          Width="180"
+                          ItemsSource="{Binding CropRatios}"
+                          SelectedItem="{Binding SelectedCropRatio}"
+                          Margin="0,0,10,0"/>
+
+                <StackPanel Grid.Column="2" 
+                            Orientation="Horizontal"
+                            Visibility="{Binding IsCustomRatio, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Ш:" 
+                               VerticalAlignment="Center"
+                               Foreground="White"
+                               Margin="10,0,5,0"/>
+                    <TextBox Width="60"
+                             Text="{Binding CustomRatioWidth, UpdateSourceTrigger=PropertyChanged}"
+                             VerticalAlignment="Center"/>
+                    <TextBlock Text="В:" 
+                               VerticalAlignment="Center"
+                               Foreground="White"
+                               Margin="10,0,5,0"/>
+                    <TextBox Width="60"
+                             Text="{Binding CustomRatioHeight, UpdateSourceTrigger=PropertyChanged}"
+                             VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <Button Grid.Column="4"
+                        Content="✓ Застосувати" 
+                        Width="120" 
+                        Margin="10,0"
+                        Background="#4CAF50"
+                        Foreground="White"
+                        Command="{Binding ApplyCropCommand}"/>
+
+                <Button Grid.Column="5"
+                        Content="✗ Скасувати" 
+                        Width="100" 
+                        Margin="0"
+                        Background="#F44336"
+                        Foreground="White"
+                        Command="{Binding CancelCropCommand}"/>
+            </Grid>
+        </Border>
+
         <!-- Робоча область зі скролом -->
-        <ScrollViewer Grid.Row="2" 
+        <ScrollViewer Grid.Row="3" 
                       x:Name="MainScrollViewer"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
                       Background="#555"
                       SizeChanged="ScrollViewer_SizeChanged">
 
-            <!-- CANVAS зображень -->
-            <Canvas x:Name="EditorCanvas"
-                    Background="LightGray"
-                    MouseDown="Canvas_MouseDown"
-                    Width="{Binding CanvasWidth}"
-                    Height="{Binding CanvasHeight}">
+            <!-- Один Grid як контейнер для всього -->
+            <Grid Width="{Binding CanvasWidth}"
+                  Height="{Binding CanvasHeight}">
 
-                <ItemsControl ItemsSource="{Binding Layers}"
-                              HorizontalAlignment="Left"
-                              VerticalAlignment="Top">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <Canvas />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
+                <!-- CANVAS зображень -->
+                <Canvas x:Name="EditorCanvas"
+                        Background="LightGray"
+                        MouseDown="Canvas_MouseDown">
 
-                    <ItemsControl.ItemContainerStyle>
-                        <Style>
-                            <Setter Property="Canvas.Left" Value="{Binding X}" />
-                            <Setter Property="Canvas.Top" Value="{Binding Y}" />
-                        </Style>
-                    </ItemsControl.ItemContainerStyle>
+                    <ItemsControl ItemsSource="{Binding Layers}"
+                                  HorizontalAlignment="Left"
+                                  VerticalAlignment="Top">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
 
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Image Source="{Binding Image}" 
-                                   Stretch="None"
-                                   RenderTransformOrigin="0.5,0.5">
-                                <Image.RenderTransform>
-                                    <TransformGroup>
-                                        <RotateTransform Angle="{Binding Angle}"/>
-                                    </TransformGroup>
-                                </Image.RenderTransform>
-                            </Image>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                        <ItemsControl.ItemContainerStyle>
+                            <Style>
+                                <Setter Property="Canvas.Left" Value="{Binding X}" />
+                                <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
 
-                <!-- Жовта рамка для вибраного шару -->
-                <Rectangle x:Name="SelectionRect"
-                           Stroke="Yellow"
-                           StrokeThickness="3"
-                           Visibility="Collapsed"
-                           IsHitTestVisible="False"
-                           Panel.ZIndex="1000">
-                    <Rectangle.RenderTransform>
-                        <RotateTransform x:Name="SelRotate" />
-                    </Rectangle.RenderTransform>
-                </Rectangle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Image Source="{Binding Image}" 
+                                       Stretch="None"
+                                       RenderTransformOrigin="0.5,0.5">
+                                    <Image.RenderTransform>
+                                        <TransformGroup>
+                                            <RotateTransform Angle="{Binding Angle}"/>
+                                        </TransformGroup>
+                                    </Image.RenderTransform>
+                                </Image>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-            </Canvas>
+                    <!-- Жовта рамка для вибраного шару -->
+                    <Rectangle x:Name="SelectionRect"
+                               Stroke="Yellow"
+                               StrokeThickness="3"
+                               Visibility="Collapsed"
+                               IsHitTestVisible="False"
+                               Panel.ZIndex="1000">
+                        <Rectangle.RenderTransform>
+                            <RotateTransform x:Name="SelRotate" />
+                        </Rectangle.RenderTransform>
+                    </Rectangle>
+
+                </Canvas>
+
+                <!-- Crop Grid поверх Canvas -->
+                <Canvas x:Name="CropGridCanvas"
+                        Visibility="Collapsed"
+                        Panel.ZIndex="2000"
+                        Background="Transparent">
+
+                    <!-- Затемнення (4 прямокутники навколо crop області) -->
+                    <Rectangle x:Name="DimTop" 
+                               Fill="#80000000" 
+                               IsHitTestVisible="False"/>
+                    <Rectangle x:Name="DimLeft" 
+                               Fill="#80000000" 
+                               IsHitTestVisible="False"/>
+                    <Rectangle x:Name="DimRight" 
+                               Fill="#80000000" 
+                               IsHitTestVisible="False"/>
+                    <Rectangle x:Name="DimBottom" 
+                               Fill="#80000000" 
+                               IsHitTestVisible="False"/>
+
+                    <!-- Crop Border -->
+                    <Border x:Name="CropBorder"
+                                BorderBrush="White"
+                                BorderThickness="2"
+                                Background="Transparent"
+                                MouseDown="CropBorder_MouseDown"
+                                MouseMove="CropBorder_MouseMove"
+                                MouseUp="CropBorder_MouseUp">
+
+                        <!-- Один Grid як контейнер для сітки і ручок -->
+                        <Grid>
+                            <!-- Сітка 3x3 для ліній -->
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Вертикальні лінії -->
+                                <Line Grid.Row="0" Grid.RowSpan="3" Grid.Column="1" 
+                  X1="0" Y1="0" X2="0" Y2="1" 
+                  Stretch="Fill" Stroke="White" StrokeThickness="1" Opacity="0.5"/>
+                                <Line Grid.Row="0" Grid.RowSpan="3" Grid.Column="2" 
+                  X1="0" Y1="0" X2="0" Y2="1" 
+                  Stretch="Fill" Stroke="White" StrokeThickness="1" Opacity="0.5"/>
+
+                                <!-- Горизонтальні лінії -->
+                                <Line Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" 
+                  X1="0" Y1="0" X2="1" Y2="0" 
+                  Stretch="Fill" Stroke="White" StrokeThickness="1" Opacity="0.5"/>
+                                <Line Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" 
+                  X1="0" Y1="0" X2="1" Y2="0" 
+                  Stretch="Fill" Stroke="White" StrokeThickness="1" Opacity="0.5"/>
+                            </Grid>
+
+                            <!-- Canvas для ручок зміни розміру -->
+                            <Canvas>
+                                <Ellipse x:Name="TopLeft" Fill="White" Width="12" Height="12" 
+                     Canvas.Left="-6" Canvas.Top="-6" Cursor="SizeNWSE"
+                     MouseDown="ResizeHandle_MouseDown"
+                     MouseMove="ResizeHandle_MouseMove"
+                     MouseUp="ResizeHandle_MouseUp"/>
+                                <Ellipse x:Name="TopRight" Fill="White" Width="12" Height="12" 
+                     Canvas.Right="-6" Canvas.Top="-6" Cursor="SizeNESW"
+                     MouseDown="ResizeHandle_MouseDown"
+                     MouseMove="ResizeHandle_MouseMove"
+                     MouseUp="ResizeHandle_MouseUp"/>
+                                <Ellipse x:Name="BottomLeft" Fill="White" Width="12" Height="12" 
+                     Canvas.Left="-6" Canvas.Bottom="-6" Cursor="SizeNESW"
+                     MouseDown="ResizeHandle_MouseDown"
+                     MouseMove="ResizeHandle_MouseMove"
+                     MouseUp="ResizeHandle_MouseUp"/>
+                                <Ellipse x:Name="BottomRight" Fill="White" Width="12" Height="12" 
+                     Canvas.Right="-6" Canvas.Bottom="-6" Cursor="SizeNWSE"
+                     MouseDown="ResizeHandle_MouseDown"
+                     MouseMove="ResizeHandle_MouseMove"
+                     MouseUp="ResizeHandle_MouseUp"/>
+                            </Canvas>
+                        </Grid>
+
+                    </Border>
+
+                </Canvas>
+
+            </Grid>
 
         </ScrollViewer>
 

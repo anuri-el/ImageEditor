@@ -4,7 +4,6 @@ using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -26,7 +25,6 @@ namespace ImageEditor.ViewModels
                 OnPropertyChanged();
                 LayerSelected?.Invoke();
 
-                // Оновлюємо значення слайдера при виборі шару
                 if (_selectedLayer != null)
                 {
                     SliderAngle = GetCurrentSliderAngle(_selectedLayer.Angle);
@@ -76,14 +74,87 @@ namespace ImageEditor.ViewModels
             }
         }
 
+        // Crop properties
+        private bool _isCropMode;
+        public bool IsCropMode
+        {
+            get => _isCropMode;
+            set
+            {
+                if (_isCropMode == value) return;
+                _isCropMode = value;
+                OnPropertyChanged();
+
+                if (!value)
+                {
+                    CancelCrop();
+                }
+            }
+        }
+
+        private CropArea _cropArea;
+        public CropArea CropArea
+        {
+            get => _cropArea;
+            set
+            {
+                _cropArea = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private CropRatio _selectedCropRatio;
+        public CropRatio SelectedCropRatio
+        {
+            get => _selectedCropRatio;
+            set
+            {
+                _selectedCropRatio = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsCustomRatio));
+            }
+        }
+
+        public ObservableCollection<CropRatio> CropRatios { get; set; }
+
+        public bool IsCustomRatio => SelectedCropRatio?.Name == "Custom";
+
+        private double _customRatioWidth = 1;
+        public double CustomRatioWidth
+        {
+            get => _customRatioWidth;
+            set
+            {
+                _customRatioWidth = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private double _customRatioHeight = 1;
+        public double CustomRatioHeight
+        {
+            get => _customRatioHeight;
+            set
+            {
+                _customRatioHeight = value;
+                OnPropertyChanged();
+            }
+        }
+
         public event Action LayerSelected;
         public event Action RotationChanged;
+        public event Action CropModeChanged;
 
         public RelayCommand AddImageCommand { get; }
         public RelayCommand SelectLayerCommand { get; }
         public RelayCommand SaveCommand { get; }
         public ICommand RotateLeftCommand { get; }
         public ICommand RotateRightCommand { get; }
+        public RelayCommand StartCropCommand { get; }
+        public RelayCommand ApplyCropCommand { get; }
+        public RelayCommand CancelCropCommand { get; }
+
+        private ICropCommand _currentCropCommand;
 
         public MainViewModel()
         {
@@ -93,6 +164,13 @@ namespace ImageEditor.ViewModels
 
             RotateLeftCommand = new RelayCommand(_ => Rotate(-90));
             RotateRightCommand = new RelayCommand(_ => Rotate(90));
+
+            StartCropCommand = new RelayCommand(StartCrop);
+            ApplyCropCommand = new RelayCommand(ApplyCrop, CanApplyCrop);
+            CancelCropCommand = new RelayCommand(CancelCrop);
+
+            CropRatios = new ObservableCollection<CropRatio>(CropRatio.GetPredefinedRatios());
+            SelectedCropRatio = CropRatios[0]; // Freeform by default
         }
 
         private void AddImage()
@@ -104,7 +182,6 @@ namespace ImageEditor.ViewModels
             {
                 var img = new BitmapImage(new System.Uri(dialog.FileName));
 
-                // Масштабуємо зображення, якщо воно завелике
                 double scale = CalculateScaleToFit(img.PixelWidth, img.PixelHeight);
 
                 int newWidth = (int)(img.PixelWidth * scale);
@@ -112,7 +189,6 @@ namespace ImageEditor.ViewModels
 
                 BitmapImage scaledImg = img;
 
-                // Якщо потрібно масштабування
                 if (scale < 1.0)
                 {
                     scaledImg = new BitmapImage();
@@ -128,7 +204,7 @@ namespace ImageEditor.ViewModels
                 var layer = new LayerModel
                 {
                     Image = scaledImg,
-                    X = (CanvasWidth - scaledImg.PixelWidth) / 2, // Центруємо
+                    X = (CanvasWidth - scaledImg.PixelWidth) / 2,
                     Y = (CanvasHeight - scaledImg.PixelHeight) / 2,
                     OriginalWidth = img.PixelWidth,
                     OriginalHeight = img.PixelHeight
@@ -139,10 +215,8 @@ namespace ImageEditor.ViewModels
             }
         }
 
-        // Розраховуємо масштаб для вписування в полотно
         private double CalculateScaleToFit(double width, double height)
         {
-            // Залишаємо 10% запасу по краях
             double maxWidth = CanvasWidth * 0.9;
             double maxHeight = CanvasHeight * 0.9;
 
@@ -151,11 +225,9 @@ namespace ImageEditor.ViewModels
 
             double scale = Math.Min(scaleX, scaleY);
 
-            // Якщо зображення менше за полотно, не збільшуємо
             return Math.Min(scale, 1.0);
         }
 
-        // Оновлення розміру полотна при зміні розміру вікна
         public void UpdateCanvasSize(double availableWidth, double availableHeight)
         {
             CanvasWidth = Math.Max(800, availableWidth);
@@ -183,7 +255,7 @@ namespace ImageEditor.ViewModels
             if (dlg.ShowDialog() != true)
                 return;
 
-            var canvas = Application.Current.MainWindow.FindName("EditorCanvas") as Canvas;
+            var canvas = Application.Current.MainWindow.FindName("EditorCanvas") as System.Windows.Controls.Canvas;
             if (canvas == null)
             {
                 MessageBox.Show("Canvas не знайдено!");
@@ -267,17 +339,20 @@ namespace ImageEditor.ViewModels
 
         private void Rotate(int angle)
         {
+            if (IsCropMode)
+            {
+                IsCropMode = false;
+            }
+
             if (SelectedLayer != null)
             {
-                // Обертаємо тільки вибраний шар
                 SelectedLayer.Angle = (SelectedLayer.Angle + angle) % 360;
                 SliderAngle = GetCurrentSliderAngle(SelectedLayer.Angle);
             }
             else if (Layers.Count > 0)
             {
-                // Обертаємо весь колаж як одне ціле
                 RotateCollage(angle);
-                SliderAngle = 0; // Скидаємо слайдер після повороту на 90°
+                SliderAngle = 0;
             }
 
             RotationChanged?.Invoke();
@@ -287,7 +362,6 @@ namespace ImageEditor.ViewModels
         {
             if (Layers.Count == 0) return;
 
-            // Знаходимо центр колажу
             double minX = double.MaxValue, minY = double.MaxValue;
             double maxX = double.MinValue, maxY = double.MinValue;
 
@@ -311,70 +385,57 @@ namespace ImageEditor.ViewModels
             double cos = Math.Cos(angleRad);
             double sin = Math.Sin(angleRad);
 
-            // Обертаємо кожен шар відносно центру колажу
             foreach (var layer in Layers)
             {
                 if (layer.Image == null) continue;
 
-                // Поточний центр шару
                 double layerCenterX = layer.X + layer.Image.PixelWidth / 2.0;
                 double layerCenterY = layer.Y + layer.Image.PixelHeight / 2.0;
 
-                // Вектор від центру колажу до центру шару
                 double dx = layerCenterX - collageCenterX;
                 double dy = layerCenterY - collageCenterY;
 
-                // Обертаємо вектор
                 double newDx = dx * cos - dy * sin;
                 double newDy = dx * sin + dy * cos;
 
-                // Нові координати центру шару
                 double newCenterX = collageCenterX + newDx;
                 double newCenterY = collageCenterY + newDy;
 
-                // Перераховуємо позицію верхнього лівого кута
                 layer.X = newCenterX - layer.Image.PixelWidth / 2.0;
                 layer.Y = newCenterY - layer.Image.PixelHeight / 2.0;
 
-                // Обертаємо сам шар
                 layer.Angle = (layer.Angle + angleDelta) % 360;
             }
         }
 
-        // Застосовуємо обертання від слайдера
         private void ApplySliderRotation(double delta)
         {
+            if (IsCropMode)
+            {
+                IsCropMode = false;
+            }
+
             if (SelectedLayer != null)
             {
-                // Обертаємо вибраний шар
                 SelectedLayer.Angle = NormalizeAngle(SelectedLayer.Angle + delta);
             }
             else if (Layers.Count > 0)
             {
-                // Обертаємо весь колаж
                 RotateCollage((int)Math.Round(delta));
             }
 
             RotationChanged?.Invoke();
         }
 
-        // Отримуємо поточний кут для слайдера (в діапазоні -45...45)
         private double GetCurrentSliderAngle(int angle)
         {
-            // Нормалізуємо кут до діапазону 0-360
             int normalized = ((angle % 360) + 360) % 360;
-
-            // Знаходимо найближчий базовий кут (0, 90, 180, 270)
             int baseAngle = (int)(Math.Round(normalized / 90.0) * 90) % 360;
-
-            // Різниця від базового кута
             int diff = normalized - baseAngle;
 
-            // Якщо різниця більше 180, коригуємо
             if (diff > 180) diff -= 360;
             if (diff < -180) diff += 360;
 
-            // Обмежуємо діапазоном -45...45
             return Math.Max(-45, Math.Min(45, diff));
         }
 
@@ -383,6 +444,119 @@ namespace ImageEditor.ViewModels
             int result = ((int)Math.Round(angle) % 360);
             if (result < 0) result += 360;
             return result;
+        }
+
+        // Crop methods
+        private void StartCrop()
+        {
+            IsCropMode = true;
+
+            // Ініціалізуємо crop область
+            if (SelectedLayer != null && SelectedLayer.Image != null)
+            {
+                // Crop для вибраного шару
+                CropArea = new CropArea
+                {
+                    X = SelectedLayer.X + SelectedLayer.Image.PixelWidth * 0.1,
+                    Y = SelectedLayer.Y + SelectedLayer.Image.PixelHeight * 0.1,
+                    Width = SelectedLayer.Image.PixelWidth * 0.8,
+                    Height = SelectedLayer.Image.PixelHeight * 0.8
+                };
+            }
+            else if (Layers.Count > 0)
+            {
+                // Crop для всього колажу
+                double minX = Layers.Min(l => l.X);
+                double minY = Layers.Min(l => l.Y);
+                double maxX = Layers.Max(l => l.X + l.Image.PixelWidth);
+                double maxY = Layers.Max(l => l.Y + l.Image.PixelHeight);
+
+                double width = maxX - minX;
+                double height = maxY - minY;
+
+                CropArea = new CropArea
+                {
+                    X = minX + width * 0.1,
+                    Y = minY + height * 0.1,
+                    Width = width * 0.8,
+                    Height = height * 0.8
+                };
+            }
+
+            CropModeChanged?.Invoke();
+        }
+
+        private bool CanApplyCrop()
+        {
+            return IsCropMode && CropArea != null;
+        }
+
+        private void ApplyCrop()
+        {
+            if (!CanApplyCrop()) return;
+
+            // Застосовуємо custom ratio якщо вибрано
+            if (IsCustomRatio && CustomRatioWidth > 0 && CustomRatioHeight > 0)
+            {
+                SelectedCropRatio = new CropRatio
+                {
+                    Name = "Custom",
+                    Width = CustomRatioWidth,
+                    Height = CustomRatioHeight
+                };
+            }
+
+            if (SelectedLayer != null)
+            {
+                // Crop одного шару
+                _currentCropCommand = new CropImageCommand(SelectedLayer, CropArea);
+            }
+            else
+            {
+                // Crop всього колажу
+                _currentCropCommand = new CropCollageCommand(Layers.ToList(), CropArea);
+            }
+
+            if (_currentCropCommand.CanExecute())
+            {
+                _currentCropCommand.Execute();
+            }
+
+            IsCropMode = false;
+            CropModeChanged?.Invoke();
+            RotationChanged?.Invoke();
+        }
+
+        private void CancelCrop()
+        {
+            IsCropMode = false;
+            CropArea = null;
+            CropModeChanged?.Invoke();
+        }
+
+        public void UpdateCropArea(double x, double y, double width, double height)
+        {
+            if (CropArea == null) return;
+
+            CropArea.X = x;
+            CropArea.Y = y;
+            CropArea.Width = width;
+            CropArea.Height = height;
+        }
+
+        public CropRatio GetEffectiveRatio()
+        {
+            if (IsCustomRatio)
+            {
+                return new CropRatio
+                {
+                    Width = CustomRatioWidth,
+                    Height = CustomRatioHeight,
+                    IsFreeform = false
+                };
+            }
+
+            return SelectedCropRatio;
         }
     }
 }

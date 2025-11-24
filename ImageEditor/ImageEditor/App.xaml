@@ -7,5 +7,8 @@
     <Application.Resources>
         <conv:SelBorderConverter x:Key="SelBorder" />
         <conv:HalfValueConverter x:Key="HalfValue"/>
+        <conv:InverseBoolConverter x:Key="InverseBool"/>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis"/>
     </Application.Resources>
 </Application>
