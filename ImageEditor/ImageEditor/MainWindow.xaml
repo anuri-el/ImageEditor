@@ -67,79 +67,99 @@
     </DockPanel>
   -->
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
         <!-- Верхня панель кнопок -->
-        <StackPanel Orientation="Horizontal" Background="#333" Height="50"
-                    VerticalAlignment="Top">
-            <Button Content="Відкрити1" Width="100" Margin="10"
+        <StackPanel Grid.Row="0" 
+                    Orientation="Horizontal" 
+                    Background="#333" 
+                    Height="50">
+            <Button Content="Відкрити" 
+                    Width="100" 
+                    Margin="10"
                     Command="{Binding AddImageCommand}" />
 
-            <Button Content="Зберегти" Width="100" Margin="10"
+            <Button Content="Зберегти" 
+                    Width="100" 
+                    Margin="10"
                     Command="{Binding SaveCommand}" />
 
-            <Button Content="Поворот ←90°" Width="120" Margin="10"
+            <Button Content="Поворот ←90°" 
+                    Width="120" 
+                    Margin="10"
                     Command="{Binding RotateLeftCommand}" />
 
-            <Button Content="Поворот 90°→" Width="120" Margin="10"
+            <Button Content="Поворот 90°→" 
+                    Width="120" 
+                    Margin="10"
                     Command="{Binding RotateRightCommand}" />
-
         </StackPanel>
 
+        <!-- Робоча область зі скролом -->
+        <ScrollViewer Grid.Row="1" 
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                      Background="#555">
 
-        <!-- Робоча область -->
-        <Grid Margin="0,50,0,0">
+            <Grid>
+                <!-- CANVAS зображень -->
+                <Canvas x:Name="EditorCanvas"
+                        Background="LightGray"
+                        MouseDown="Canvas_MouseDown"
+                        Height="2000"
+                        Width="2000">
 
-            <!-- CANVAS зображень -->
-            <Canvas x:Name="EditorCanvas"
-                    Background="LightGray"
-                    MouseDown="Canvas_MouseDown"
-                    Height="1000"
-                    Width="1500">
+                    <ItemsControl ItemsSource="{Binding Layers}"
+                                  HorizontalAlignment="Left"
+                                  VerticalAlignment="Top">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
 
-                <ItemsControl ItemsSource="{Binding Layers}"
-                              HorizontalAlignment="Left"
-                              VerticalAlignment="Top">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <Canvas />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemContainerStyle>
+                            <Style>
+                                <Setter Property="Canvas.Left" Value="{Binding X}" />
+                                <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
 
-                    <ItemsControl.ItemContainerStyle>
-                        <Style>
-                            <Setter Property="Canvas.Left" Value="{Binding X}" />
-                            <Setter Property="Canvas.Top" Value="{Binding Y}" />
-                        </Style>
-                    </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Image Source="{Binding Image}" 
+                                       Stretch="None"
+                                       RenderTransformOrigin="0.5,0.5">
+                                    <Image.RenderTransform>
+                                        <TransformGroup>
+                                            <RotateTransform Angle="{Binding Angle}"/>
+                                        </TransformGroup>
+                                    </Image.RenderTransform>
+                                </Image>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Image Source="{Binding Image}" Stretch="None">
-                                <Image.RenderTransform>
-                                    <RotateTransform Angle="{Binding Angle}"
-                                                     CenterX="{Binding Image.PixelWidth, Converter={StaticResource HalfValue}}"
-                                                     CenterY="{Binding Image.PixelHeight, Converter={StaticResource HalfValue}}"/>
-                                </Image.RenderTransform>
-                            </Image>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                </Canvas>
 
-            </Canvas>
-
-            <!-- Жовта рамка для вибраного шару -->
-            <Rectangle x:Name="SelectionRect"
+                <!-- Жовта рамка для вибраного шару -->
+                <Rectangle x:Name="SelectionRect"
                            Stroke="Yellow"
                            StrokeThickness="3"
                            Visibility="Collapsed"
-                           IsHitTestVisible="False">
-                <Rectangle.RenderTransform>
-                    <RotateTransform x:Name="SelRotate" />
-                </Rectangle.RenderTransform>
-            </Rectangle>
+                           IsHitTestVisible="False"
+                           Panel.ZIndex="1000">
+                    <Rectangle.RenderTransform>
+                        <RotateTransform x:Name="SelRotate" />
+                    </Rectangle.RenderTransform>
+                </Rectangle>
+            </Grid>
 
-        </Grid>
+        </ScrollViewer>
 
     </Grid>
-    
+
 </Window>

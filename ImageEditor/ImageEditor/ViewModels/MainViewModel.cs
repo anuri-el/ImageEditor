@@ -31,12 +31,9 @@ namespace ImageEditor.ViewModels
         public event Action LayerSelected;
         public event Action RotationChanged;
 
-
         public RelayCommand AddImageCommand { get; }
         public RelayCommand SelectLayerCommand { get; }
         public RelayCommand SaveCommand { get; }
-        //public RelayCommand RotateRightCommand { get; }
-        //public RelayCommand RotateLeftCommand { get; }
         public ICommand RotateLeftCommand { get; }
         public ICommand RotateRightCommand { get; }
 
@@ -46,8 +43,6 @@ namespace ImageEditor.ViewModels
             SelectLayerCommand = new RelayCommand(o => SelectLayer(o));
             SaveCommand = new RelayCommand(SaveCollage);
 
-            //RotateRightCommand = new RelayCommand(RotateRight);
-            //RotateLeftCommand = new RelayCommand(RotateLeft);
             RotateLeftCommand = new RelayCommand(_ => Rotate(-90));
             RotateRightCommand = new RelayCommand(_ => Rotate(90));
         }
@@ -78,9 +73,7 @@ namespace ImageEditor.ViewModels
             if (obj is LayerModel layer)
             {
                 foreach (var l in Layers)
-                {
                     l.IsSelected = false;
-                }
 
                 layer.IsSelected = true;
                 SelectedLayer = layer;
@@ -178,33 +171,78 @@ namespace ImageEditor.ViewModels
             MessageBox.Show("Файл збережено успішно!");
         }
 
-        //private void RotateRight()
-        //{
-        //    if (SelectedLayer != null)
-        //        SelectedLayer.Angle += 90;
-        //}
-
-        //private void RotateLeft()
-        //{
-        //    if (SelectedLayer != null)
-        //        SelectedLayer.Angle -= 90;
-        //}
         private void Rotate(int angle)
         {
             if (SelectedLayer != null)
             {
-                // Це тепер спрацює, бо LayerModel має INotifyPropertyChanged
+                // Обертаємо тільки вибраний шар
                 SelectedLayer.Angle = (SelectedLayer.Angle + angle) % 360;
             }
-            else
+            else if (Layers.Count > 0)
             {
-                foreach (var layer in Layers)
-                {
-                    layer.Angle = (layer.Angle + angle) % 360;
-                }
+                // Обертаємо весь колаж як одне ціле
+                RotateCollage(angle);
             }
 
             RotationChanged?.Invoke();
+        }
+
+        private void RotateCollage(int angleDelta)
+        {
+            if (Layers.Count == 0) return;
+
+            // Знаходимо центр колажу
+            double minX = double.MaxValue, minY = double.MaxValue;
+            double maxX = double.MinValue, maxY = double.MinValue;
+
+            foreach (var layer in Layers)
+            {
+                if (layer.Image == null) continue;
+
+                double centerX = layer.X + layer.Image.PixelWidth / 2.0;
+                double centerY = layer.Y + layer.Image.PixelHeight / 2.0;
+
+                if (centerX < minX) minX = centerX;
+                if (centerX > maxX) maxX = centerX;
+                if (centerY < minY) minY = centerY;
+                if (centerY > maxY) maxY = centerY;
+            }
+
+            double collageCenterX = (minX + maxX) / 2.0;
+            double collageCenterY = (minY + maxY) / 2.0;
+
+            double angleRad = angleDelta * Math.PI / 180.0;
+            double cos = Math.Cos(angleRad);
+            double sin = Math.Sin(angleRad);
+
+            // Обертаємо кожен шар відносно центру колажу
+            foreach (var layer in Layers)
+            {
+                if (layer.Image == null) continue;
+
+                // Поточний центр шару
+                double layerCenterX = layer.X + layer.Image.PixelWidth / 2.0;
+                double layerCenterY = layer.Y + layer.Image.PixelHeight / 2.0;
+
+                // Вектор від центру колажу до центру шару
+                double dx = layerCenterX - collageCenterX;
+                double dy = layerCenterY - collageCenterY;
+
+                // Обертаємо вектор
+                double newDx = dx * cos - dy * sin;
+                double newDy = dx * sin + dy * cos;
+
+                // Нові координати центру шару
+                double newCenterX = collageCenterX + newDx;
+                double newCenterY = collageCenterY + newDy;
+
+                // Перераховуємо позицію верхнього лівого кута
+                layer.X = newCenterX - layer.Image.PixelWidth / 2.0;
+                layer.Y = newCenterY - layer.Image.PixelHeight / 2.0;
+
+                // Обертаємо сам шар
+                layer.Angle = (layer.Angle + angleDelta) % 360;
+            }
         }
     }
 }

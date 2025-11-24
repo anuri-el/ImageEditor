@@ -1,10 +1,9 @@
-﻿using System.ComponentModel;
-using System.Runtime.CompilerServices;
+﻿using ImageEditor.ViewModels;
 using System.Windows.Media.Imaging;
 
 namespace ImageEditor.Models
 {
-    public class LayerModel : INotifyPropertyChanged
+    public class LayerModel : BaseViewModel
     {
         public string FilePath { get; set; }
         public BitmapImage Image { get; set; }
@@ -31,8 +30,27 @@ namespace ImageEditor.Models
             }
         }
 
-        public bool IsVisible { get; set; } = true;
-        public bool IsSelected { get; set; } = false;
+        private bool _isVisible = true;
+        public bool IsVisible
+        {
+            get => _isVisible;
+            set
+            {
+                _isVisible = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                _isSelected = value;
+                OnPropertyChanged();
+            }
+        }
 
         private int _angle;
         public int Angle
@@ -43,13 +61,6 @@ namespace ImageEditor.Models
                 _angle = value % 360;
                 OnPropertyChanged();
             }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
     }
 }
