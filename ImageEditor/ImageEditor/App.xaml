@@ -6,5 +6,6 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <conv:SelBorderConverter x:Key="SelBorder" />
+        <conv:HalfValueConverter x:Key="HalfValue"/>
     </Application.Resources>
 </Application>

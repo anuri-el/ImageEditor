@@ -19,18 +19,30 @@ namespace ImageEditor.ViewModels
         public LayerModel SelectedLayer
         {
             get => _selectedLayer;
-            set { _selectedLayer = value; OnPropertyChanged(); }
+            set
+            {
+                _selectedLayer = value;
+                OnPropertyChanged();
+                LayerSelected?.Invoke();
+            }
         }
+
+        public event Action LayerSelected;
 
         public RelayCommand AddImageCommand { get; }
         public RelayCommand SelectLayerCommand { get; }
         public RelayCommand SaveCommand { get; }
+        public RelayCommand RotateRightCommand { get; }
+        public RelayCommand RotateLeftCommand { get; }
 
         public MainViewModel()
         {
             AddImageCommand = new RelayCommand(AddImage);
             SelectLayerCommand = new RelayCommand(o => SelectLayer(o));
             SaveCommand = new RelayCommand(SaveCollage);
+
+            RotateRightCommand = new RelayCommand(RotateRight);
+            RotateLeftCommand = new RelayCommand(RotateLeft);
         }
 
         private void AddImage()
@@ -74,7 +86,7 @@ namespace ImageEditor.ViewModels
             if (dlg.ShowDialog() != true)
                 return;
 
-            var canvas = Application.Current.MainWindow.FindName("MainCanvas") as Canvas;
+            var canvas = Application.Current.MainWindow.FindName("EditorCanvas") as Canvas;
             if (canvas == null)
             {
                 MessageBox.Show("Canvas не знайдено!");
@@ -154,6 +166,18 @@ namespace ImageEditor.ViewModels
                 encoder.Save(fs);
 
             MessageBox.Show("Файл збережено успішно!");
+        }
+
+        private void RotateRight()
+        {
+            if (SelectedLayer != null)
+                SelectedLayer.Angle += 90;
+        }
+
+        private void RotateLeft()
+        {
+            if (SelectedLayer != null)
+                SelectedLayer.Angle -= 90;
         }
     }
 }

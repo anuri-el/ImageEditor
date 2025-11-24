@@ -8,21 +8,28 @@
         xmlns:conv="clr-namespace:ImageEditor.Converters"
         mc:Ignorable="d"
         Title="Image Editor" 
-        Height="600" Width="900">
+        Height="800" Width="1200">
 
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
-
+<!--
     <DockPanel>
 
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Background="#ddd">
             <Button Content="Відкрити зображення" Command="{Binding AddImageCommand}" Margin="5"/>
             <Button Content="Зберегти" Command="{Binding SaveCommand}" Margin="5"/>
+            <Button Content="Поворот ←" Command="{Binding RotateLeftCommand}" Margin="5"/>
+            <Button Content="Поворот →" Command="{Binding RotateRightCommand}" Margin="5"/>
         </StackPanel>
 
         <ScrollViewer>
-            <Canvas Background="#333" Width="1800" Height="1200" x:Name="MainCanvas">
+            <Canvas 
+                Height="1200"
+                Width="1500"
+                x:Name="MainCanvas" 
+                Background="#333"
+                MouseDown="Canvas_MouseDown">
 
                 <ItemsControl ItemsSource="{Binding Layers}">
                     <ItemsControl.ItemsPanel>
@@ -43,11 +50,11 @@
                             <Border BorderBrush="{Binding IsSelected, Converter={StaticResource SelBorder}}"
                                     BorderThickness="2">
                                 <Image Source="{Binding Image}">
-                                    <Image.InputBindings>
-                                        <MouseBinding Gesture="LeftClick"
-                                                      Command="{Binding DataContext.SelectLayerCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                      CommandParameter="{Binding}" />
-                                    </Image.InputBindings>
+                                    <Image.RenderTransform>
+                                        <RotateTransform Angle="{Binding Angle}"
+                                                         CenterX="{Binding Image.PixelWidth, Converter={StaticResource HalfValue}}"
+                                                         CenterY="{Binding Image.PixelHeight, Converter={StaticResource HalfValue}}"/>
+                                    </Image.RenderTransform>
                                 </Image>
                             </Border>
                         </DataTemplate>
@@ -58,4 +65,73 @@
             </Canvas>
         </ScrollViewer>
     </DockPanel>
+  -->
+    <Grid>
+
+        <!-- Верхня панель кнопок -->
+        <StackPanel Orientation="Horizontal" Background="#333" Height="50"
+                    VerticalAlignment="Top">
+            <Button Content="Відкрити" Width="100" Margin="10"
+                    Command="{Binding AddImageCommand}" />
+
+            <Button Content="Зберегти" Width="100" Margin="10"
+                    Command="{Binding SaveCommand}" />
+
+            <Button Content="Поворот ←90°" Width="120" Margin="10"
+                    Command="{Binding RotateLeftCommand}" />
+
+            <Button Content="Поворот 90°→" Width="120" Margin="10"
+                    Command="{Binding RotateRightCommand}" />
+
+        </StackPanel>
+
+
+        <!-- Робоча область -->
+        <Grid Margin="0,50,0,0">
+
+            <!-- CANVAS зображень -->
+            <Canvas x:Name="EditorCanvas"
+                    Background="LightGray"
+                    MouseDown="Canvas_MouseDown"
+                    Height="1000"
+                    Width="1500">
+
+                <ItemsControl ItemsSource="{Binding Layers}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <Canvas />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+
+                    <ItemsControl.ItemContainerStyle>
+                        <Style>
+                            <Setter Property="Canvas.Left" Value="{Binding X}" />
+                            <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                        </Style>
+                    </ItemsControl.ItemContainerStyle>
+
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Image Source="{Binding Image}">
+                                <Image.RenderTransform>
+                                    <RotateTransform Angle="{Binding Angle}" />
+                                </Image.RenderTransform>
+                            </Image>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </Canvas>
+
+            <!-- Жовта рамка для вибраного шару -->
+            <Rectangle x:Name="SelectionRect"
+                       Stroke="Yellow"
+                       StrokeThickness="3"
+                       Visibility="Collapsed"
+                       IsHitTestVisible="False"/>
+
+        </Grid>
+
+    </Grid>
+    
 </Window>
