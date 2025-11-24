@@ -25,6 +25,32 @@ namespace ImageEditor.ViewModels
                 _selectedLayer = value;
                 OnPropertyChanged();
                 LayerSelected?.Invoke();
+
+                // Оновлюємо значення слайдера при виборі шару
+                if (_selectedLayer != null)
+                {
+                    SliderAngle = GetCurrentSliderAngle(_selectedLayer.Angle);
+                }
+                else
+                {
+                    SliderAngle = 0;
+                }
+            }
+        }
+
+        private double _sliderAngle;
+        public double SliderAngle
+        {
+            get => _sliderAngle;
+            set
+            {
+                if (Math.Abs(_sliderAngle - value) < 0.01) return;
+
+                double delta = value - _sliderAngle;
+                _sliderAngle = value;
+                OnPropertyChanged();
+
+                ApplySliderRotation(delta);
             }
         }
 
@@ -177,11 +203,13 @@ namespace ImageEditor.ViewModels
             {
                 // Обертаємо тільки вибраний шар
                 SelectedLayer.Angle = (SelectedLayer.Angle + angle) % 360;
+                SliderAngle = GetCurrentSliderAngle(SelectedLayer.Angle);
             }
             else if (Layers.Count > 0)
             {
                 // Обертаємо весь колаж як одне ціле
                 RotateCollage(angle);
+                SliderAngle = 0; // Скидаємо слайдер після повороту на 90°
             }
 
             RotationChanged?.Invoke();
@@ -243,6 +271,50 @@ namespace ImageEditor.ViewModels
                 // Обертаємо сам шар
                 layer.Angle = (layer.Angle + angleDelta) % 360;
             }
+        }
+
+        // Застосовуємо обертання від слайдера
+        private void ApplySliderRotation(double delta)
+        {
+            if (SelectedLayer != null)
+            {
+                // Обертаємо вибраний шар
+                SelectedLayer.Angle = NormalizeAngle(SelectedLayer.Angle + delta);
+            }
+            else if (Layers.Count > 0)
+            {
+                // Обертаємо весь колаж
+                RotateCollage((int)Math.Round(delta));
+            }
+
+            RotationChanged?.Invoke();
+        }
+
+        // Отримуємо поточний кут для слайдера (в діапазоні -45...45)
+        private double GetCurrentSliderAngle(int angle)
+        {
+            // Нормалізуємо кут до діапазону 0-360
+            int normalized = ((angle % 360) + 360) % 360;
+
+            // Знаходимо найближчий базовий кут (0, 90, 180, 270)
+            int baseAngle = (int)(Math.Round(normalized / 90.0) * 90) % 360;
+
+            // Різниця від базового кута
+            int diff = normalized - baseAngle;
+
+            // Якщо різниця більше 180, коригуємо
+            if (diff > 180) diff -= 360;
+            if (diff < -180) diff += 360;
+
+            // Обмежуємо діапазоном -45...45
+            return Math.Max(-45, Math.Min(45, diff));
+        }
+
+        private int NormalizeAngle(double angle)
+        {
+            int result = ((int)Math.Round(angle) % 360);
+            if (result < 0) result += 360;
+            return result;
         }
     }
 }

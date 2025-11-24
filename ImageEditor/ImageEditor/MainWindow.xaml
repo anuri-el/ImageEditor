@@ -69,6 +69,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -98,8 +99,66 @@
                     Command="{Binding RotateRightCommand}" />
         </StackPanel>
 
+        <!-- Панель слайдера обертання -->
+        <Border Grid.Row="1" 
+                Background="#444" 
+                Padding="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" 
+                           Text="Обертання:" 
+                           VerticalAlignment="Center"
+                           Foreground="White"
+                           Margin="0,0,10,0"
+                           FontWeight="Bold"/>
+
+                <Grid Grid.Column="1" MaxWidth="500">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" 
+                               Text="-45°" 
+                               VerticalAlignment="Center"
+                               Foreground="White"
+                               Margin="0,0,10,0"/>
+
+                    <Slider Grid.Column="1"
+                            Minimum="-45"
+                            Maximum="45"
+                            Value="{Binding SliderAngle, Mode=TwoWay}"
+                            TickFrequency="5"
+                            IsSnapToTickEnabled="False"
+                            VerticalAlignment="Center"
+                            Margin="5,0"/>
+
+                    <TextBlock Grid.Column="2" 
+                               Text="+45°" 
+                               VerticalAlignment="Center"
+                               Foreground="White"
+                               Margin="10,0,0,0"/>
+                </Grid>
+
+                <TextBlock Grid.Column="2" 
+                           VerticalAlignment="Center"
+                           Foreground="White"
+                           Margin="20,0,0,0"
+                           FontWeight="Bold">
+                    <Run Text="Кут: "/>
+                    <Run Text="{Binding SliderAngle, StringFormat={}{0:F1}°}"/>
+                </TextBlock>
+            </Grid>
+        </Border>
+
         <!-- Робоча область зі скролом -->
-        <ScrollViewer Grid.Row="1" 
+        <ScrollViewer Grid.Row="2" 
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
                       Background="#555">
