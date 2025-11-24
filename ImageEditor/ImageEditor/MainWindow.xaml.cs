@@ -74,25 +74,33 @@ namespace ImageEditor
                 return;
             }
 
-            SelectionRect.Visibility = Visibility.Visible;
+            try
+            {
+                SelectionRect.Visibility = Visibility.Visible;
 
-            double w = layer.Image.PixelWidth;
-            double h = layer.Image.PixelHeight;
-            double angle = layer.Angle;
-            double rad = Math.PI * angle / 180.0;
+                double w = layer.Image.PixelWidth;
+                double h = layer.Image.PixelHeight;
+                double angle = layer.Angle;
+                double rad = Math.PI * angle / 180.0;
 
-            double w2 = Math.Abs(w * Math.Cos(rad)) + Math.Abs(h * Math.Sin(rad));
-            double h2 = Math.Abs(w * Math.Sin(rad)) + Math.Abs(h * Math.Cos(rad));
+                double w2 = Math.Abs(w * Math.Cos(rad)) + Math.Abs(h * Math.Sin(rad));
+                double h2 = Math.Abs(w * Math.Sin(rad)) + Math.Abs(h * Math.Cos(rad));
 
-            SelectionRect.Width = w2;
-            SelectionRect.Height = h2;
+                SelectionRect.Width = w2;
+                SelectionRect.Height = h2;
 
-            Canvas.SetLeft(SelectionRect, layer.X - (w2 - w) / 2);
-            Canvas.SetTop(SelectionRect, layer.Y - (h2 - h) / 2);
+                Canvas.SetLeft(SelectionRect, layer.X - (w2 - w) / 2);
+                Canvas.SetTop(SelectionRect, layer.Y - (h2 - h) / 2);
 
-            SelRotate.Angle = angle;
-            SelRotate.CenterX = SelectionRect.Width / 2;
-            SelRotate.CenterY = SelectionRect.Height / 2;
+                SelRotate.Angle = angle;
+                SelRotate.CenterX = SelectionRect.Width / 2;
+                SelRotate.CenterY = SelectionRect.Height / 2;
+            }
+            catch (Exception ex)
+            {
+                SelectionRect.Visibility = Visibility.Collapsed;
+                System.Diagnostics.Debug.WriteLine($"Error updating selection rect: {ex.Message}");
+            }
         }
 
         private void UpdateCropGrid()

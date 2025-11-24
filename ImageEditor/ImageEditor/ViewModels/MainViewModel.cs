@@ -495,36 +495,67 @@ namespace ImageEditor.ViewModels
         {
             if (!CanApplyCrop()) return;
 
-            // Застосовуємо custom ratio якщо вибрано
-            if (IsCustomRatio && CustomRatioWidth > 0 && CustomRatioHeight > 0)
+            try
             {
-                SelectedCropRatio = new CropRatio
+                // Застосовуємо custom ratio якщо вибрано
+                if (IsCustomRatio && CustomRatioWidth > 0 && CustomRatioHeight > 0)
                 {
-                    Name = "Custom",
-                    Width = CustomRatioWidth,
-                    Height = CustomRatioHeight
-                };
-            }
+                    SelectedCropRatio = new CropRatio
+                    {
+                        Name = "Custom",
+                        Width = CustomRatioWidth,
+                        Height = CustomRatioHeight
+                    };
+                }
 
-            if (SelectedLayer != null)
-            {
-                // Crop одного шару
-                _currentCropCommand = new CropImageCommand(SelectedLayer, CropArea);
-            }
-            else
-            {
-                // Crop всього колажу
-                _currentCropCommand = new CropCollageCommand(Layers.ToList(), CropArea);
-            }
+                if (SelectedLayer != null)
+                {
+                    // Crop одного шару
+                    _currentCropCommand = new CropImageCommand(SelectedLayer, CropArea);
+                }
+                else
+                {
+                    // Crop всього колажу - передаємо ObservableCollection напряму
+                    _currentCropCommand = new CropCollageCommand(Layers, CropArea);
+                }
 
-            if (_currentCropCommand.CanExecute())
-            {
-                _currentCropCommand.Execute();
-            }
+                if (_currentCropCommand.CanExecute())
+                {
+                    _currentCropCommand.Execute();
+                }
 
-            IsCropMode = false;
-            CropModeChanged?.Invoke();
-            RotationChanged?.Invoke();
+                IsCropMode = false;
+                CropArea = null;
+
+                // Оновлюємо розмір canvas після crop колажу
+                if (SelectedLayer == null && Layers.Count > 0)
+                {
+                    UpdateCanvasAfterCrop();
+                }
+
+                CropModeChanged?.Invoke();
+                RotationChanged?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Помилка при застосуванні crop: {ex.Message}");
+                IsCropMode = false;
+                CropArea = null;
+                CropModeChanged?.Invoke();
+            }
+        }
+
+        private void UpdateCanvasAfterCrop()
+        {
+            if (Layers.Count == 0) return;
+
+            // Знаходимо максимальні розміри після crop
+            double maxRight = Layers.Max(l => l.X + (l.Image?.PixelWidth ?? 0));
+            double maxBottom = Layers.Max(l => l.Y + (l.Image?.PixelHeight ?? 0));
+
+            // Додаємо трохи простору
+            CanvasWidth = Math.Max(800, maxRight + 100);
+            CanvasHeight = Math.Max(600, maxBottom + 100);
         }
 
         private void CancelCrop()

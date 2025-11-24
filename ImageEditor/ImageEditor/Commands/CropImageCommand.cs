@@ -1,4 +1,6 @@
 ﻿using ImageEditor.Models;
+using System.IO;
+using System.Windows;
 using System.Windows.Media.Imaging;
 
 namespace ImageEditor.Commands
@@ -31,13 +33,43 @@ namespace ImageEditor.Commands
             _originalX = _layer.X;
             _originalY = _layer.Y;
 
-            // Виконуємо crop
-            var croppedImage = CropImage(_layer.Image, _cropArea);
-            _layer.Image = croppedImage;
+            try
+            {
+                // Обчислюємо область crop в координатах шару
+                double cropLocalX = _cropArea.X - _layer.X;
+                double cropLocalY = _cropArea.Y - _layer.Y;
 
-            // Оновлюємо позицію
-            _layer.X += _cropArea.X;
-            _layer.Y += _cropArea.Y;
+                // Перевіряємо межі
+                cropLocalX = Math.Max(0, cropLocalX);
+                cropLocalY = Math.Max(0, cropLocalY);
+
+                double maxWidth = Math.Min(_cropArea.Width, _layer.Image.PixelWidth - cropLocalX);
+                double maxHeight = Math.Min(_cropArea.Height, _layer.Image.PixelHeight - cropLocalY);
+
+                if (maxWidth <= 0 || maxHeight <= 0)
+                {
+                    System.Windows.MessageBox.Show("Неможливо обрізати зображення: область поза межами.");
+                    return;
+                }
+
+                // Виконуємо crop
+                var croppedImage = CropImage(_layer.Image,
+                    (int)cropLocalX,
+                    (int)cropLocalY,
+                    (int)maxWidth,
+                    (int)maxHeight);
+
+                _layer.Image = croppedImage;
+
+                // Оновлюємо позицію - зображення залишається на місці crop області
+                _layer.X = _cropArea.X;
+                _layer.Y = _cropArea.Y;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Помилка при обрізанні: {ex.Message}");
+                Undo();
+            }
         }
 
         public void Undo()
@@ -49,19 +81,17 @@ namespace ImageEditor.Commands
             _layer.Y = _originalY;
         }
 
-        private BitmapImage CropImage(BitmapImage source, CropArea area)
+        private BitmapImage CropImage(BitmapImage source, int x, int y, int width, int height)
         {
+            // Створюємо CroppedBitmap
             var croppedBitmap = new CroppedBitmap(source,
-                new System.Windows.Int32Rect(
-                    (int)area.X,
-                    (int)area.Y,
-                    (int)area.Width,
-                    (int)area.Height));
+                new Int32Rect(x, y, width, height));
 
+            // Конвертуємо в BitmapImage
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(croppedBitmap));
 
-            using (var stream = new System.IO.MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 encoder.Save(stream);
                 stream.Position = 0;

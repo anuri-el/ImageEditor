@@ -1,4 +1,6 @@
 ﻿using ImageEditor.Models;
+using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
 
@@ -6,11 +8,12 @@ namespace ImageEditor.Commands
 {
     public class CropCollageCommand : ICropCommand
     {
-        private readonly List<LayerModel> _layers;
+        private readonly ObservableCollection<LayerModel> _layers;
         private readonly CropArea _cropArea;
         private readonly Dictionary<LayerModel, LayerMemento> _mementos = new Dictionary<LayerModel, LayerMemento>();
+        private readonly List<LayerModel> _removedLayers = new List<LayerModel>();
 
-        public CropCollageCommand(List<LayerModel> layers, CropArea cropArea)
+        public CropCollageCommand(ObservableCollection<LayerModel> layers, CropArea cropArea)
         {
             _layers = layers;
             _cropArea = cropArea;
@@ -25,75 +28,93 @@ namespace ImageEditor.Commands
         {
             if (!CanExecute()) return;
 
-            // Зберігаємо стан всіх шарів
-            foreach (var layer in _layers)
+            try
             {
-                _mementos[layer] = new LayerMemento(layer);
-            }
+                // Зберігаємо стан всіх шарів
+                foreach (var layer in _layers.ToList())
+                {
+                    _mementos[layer] = new LayerMemento(layer);
+                }
 
-            // Обрізаємо кожен шар відносно crop області
-            foreach (var layer in _layers.ToList())
-            {
-                if (layer.Image == null) continue;
-
-                // Перевіряємо чи перетинається шар з crop областю
-                var layerRect = new Rect(layer.X, layer.Y, layer.Image.PixelWidth, layer.Image.PixelHeight);
                 var cropRect = new Rect(_cropArea.X, _cropArea.Y, _cropArea.Width, _cropArea.Height);
 
-                if (!layerRect.IntersectsWith(cropRect))
+                // Обрізаємо кожен шар
+                foreach (var layer in _layers.ToList())
                 {
-                    // Видаляємо шари, які не перетинаються
-                    _layers.Remove(layer);
-                    continue;
-                }
+                    if (layer.Image == null) continue;
 
-                // Обчислюємо область перетину
-                var intersection = Rect.Intersect(layerRect, cropRect);
+                    var layerRect = new Rect(layer.X, layer.Y, layer.Image.PixelWidth, layer.Image.PixelHeight);
 
-                // Координати crop в локальній системі шару
-                double localX = intersection.X - layer.X;
-                double localY = intersection.Y - layer.Y;
-
-                // Обрізаємо зображення
-                try
-                {
-                    var croppedBitmap = new CroppedBitmap(layer.Image,
-                        new Int32Rect(
-                            (int)localX,
-                            (int)localY,
-                            (int)intersection.Width,
-                            (int)intersection.Height));
-
-                    var encoder = new PngBitmapEncoder();
-                    encoder.Frames.Add(BitmapFrame.Create(croppedBitmap));
-
-                    using (var stream = new System.IO.MemoryStream())
+                    if (!layerRect.IntersectsWith(cropRect))
                     {
-                        encoder.Save(stream);
-                        stream.Position = 0;
+                        // Видаляємо шари, які не перетинаються
+                        _layers.Remove(layer);
+                        _removedLayers.Add(layer);
+                        continue;
+                    }
 
-                        var result = new BitmapImage();
-                        result.BeginInit();
-                        result.CacheOption = BitmapCacheOption.OnLoad;
-                        result.StreamSource = stream;
-                        result.EndInit();
-                        result.Freeze();
+                    // Обчислюємо область перетину
+                    var intersection = Rect.Intersect(layerRect, cropRect);
 
-                        layer.Image = result;
-                        layer.X = intersection.X - _cropArea.X;
-                        layer.Y = intersection.Y - _cropArea.Y;
+                    // Координати crop в локальній системі шару
+                    int localX = (int)Math.Max(0, intersection.X - layer.X);
+                    int localY = (int)Math.Max(0, intersection.Y - layer.Y);
+                    int localWidth = (int)Math.Min(intersection.Width, layer.Image.PixelWidth - localX);
+                    int localHeight = (int)Math.Min(intersection.Height, layer.Image.PixelHeight - localY);
+
+                    if (localWidth <= 0 || localHeight <= 0)
+                    {
+                        _layers.Remove(layer);
+                        _removedLayers.Add(layer);
+                        continue;
+                    }
+
+                    try
+                    {
+                        // Обрізаємо зображення
+                        var croppedBitmap = new CroppedBitmap(layer.Image,
+                            new Int32Rect(localX, localY, localWidth, localHeight));
+
+                        var encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(BitmapFrame.Create(croppedBitmap));
+
+                        using (var stream = new MemoryStream())
+                        {
+                            encoder.Save(stream);
+                            stream.Position = 0;
+
+                            var result = new BitmapImage();
+                            result.BeginInit();
+                            result.CacheOption = BitmapCacheOption.OnLoad;
+                            result.StreamSource = stream;
+                            result.EndInit();
+                            result.Freeze();
+
+                            layer.Image = result;
+
+                            // Нова позиція відносно crop області
+                            layer.X = intersection.X - _cropArea.X;
+                            layer.Y = intersection.Y - _cropArea.Y;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Windows.MessageBox.Show($"Помилка обрізання шару: {ex.Message}");
+                        _layers.Remove(layer);
+                        _removedLayers.Add(layer);
                     }
                 }
-                catch
-                {
-                    // Якщо не вдалося обрізати, видаляємо шар
-                    _layers.Remove(layer);
-                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Помилка при обрізанні колажу: {ex.Message}");
+                Undo();
             }
         }
 
         public void Undo()
         {
+            // Відновлюємо всі шари
             foreach (var kvp in _mementos)
             {
                 kvp.Value.Restore(kvp.Key);
@@ -102,6 +123,9 @@ namespace ImageEditor.Commands
                     _layers.Add(kvp.Key);
                 }
             }
+
+            // Очищаємо список видалених
+            _removedLayers.Clear();
         }
 
         // Memento Pattern для збереження стану шару
