@@ -163,48 +163,45 @@
                       VerticalScrollBarVisibility="Auto"
                       Background="#555">
 
-            <Grid>
-                <!-- CANVAS зображень -->
-                <Canvas x:Name="EditorCanvas"
-                        Background="LightGray"
-                        MouseDown="Canvas_MouseDown"
-                        Height="2000"
-                        Width="2000">
+            <!-- CANVAS зображень -->
+            <Canvas x:Name="EditorCanvas"
+                    Background="LightGray"
+                    MouseDown="Canvas_MouseDown"
+                    Height="2000"
+                    Width="2000">
 
-                    <ItemsControl ItemsSource="{Binding Layers}"
-                                  HorizontalAlignment="Left"
-                                  VerticalAlignment="Top">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <Canvas />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
+                <ItemsControl ItemsSource="{Binding Layers}"
+                              HorizontalAlignment="Left"
+                              VerticalAlignment="Top">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <Canvas />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
 
-                        <ItemsControl.ItemContainerStyle>
-                            <Style>
-                                <Setter Property="Canvas.Left" Value="{Binding X}" />
-                                <Setter Property="Canvas.Top" Value="{Binding Y}" />
-                            </Style>
-                        </ItemsControl.ItemContainerStyle>
+                    <ItemsControl.ItemContainerStyle>
+                        <Style>
+                            <Setter Property="Canvas.Left" Value="{Binding X}" />
+                            <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                        </Style>
+                    </ItemsControl.ItemContainerStyle>
 
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Image Source="{Binding Image}" 
-                                       Stretch="None"
-                                       RenderTransformOrigin="0.5,0.5">
-                                    <Image.RenderTransform>
-                                        <TransformGroup>
-                                            <RotateTransform Angle="{Binding Angle}"/>
-                                        </TransformGroup>
-                                    </Image.RenderTransform>
-                                </Image>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Image Source="{Binding Image}" 
+                                   Stretch="None"
+                                   RenderTransformOrigin="0.5,0.5">
+                                <Image.RenderTransform>
+                                    <TransformGroup>
+                                        <RotateTransform Angle="{Binding Angle}"/>
+                                    </TransformGroup>
+                                </Image.RenderTransform>
+                            </Image>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
-                </Canvas>
-
-                <!-- Жовта рамка для вибраного шару -->
+                <!-- Жовта рамка для вибраного шару - тепер ВСЕРЕДИНІ Canvas -->
                 <Rectangle x:Name="SelectionRect"
                            Stroke="Yellow"
                            StrokeThickness="3"
@@ -215,7 +212,8 @@
                         <RotateTransform x:Name="SelRotate" />
                     </Rectangle.RenderTransform>
                 </Rectangle>
-            </Grid>
+
+            </Canvas>
 
         </ScrollViewer>
 
