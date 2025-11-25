@@ -515,6 +515,82 @@
 
         </ScrollViewer>
 
+        <Border Grid.Row="4" 
+                HorizontalAlignment="Right"
+                Width="250"
+                Background="#2A2A2A"
+                BorderBrush="#555"
+                BorderThickness="1,0,0,0"
+                Margin="0,0,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" 
+                           Text="Шари" 
+                           FontWeight="Bold"
+                           Foreground="White"
+                           Padding="10"
+                           Background="#1E1E1E"/>
+
+                <ListBox Grid.Row="1"
+                         ItemsSource="{Binding Layers}"
+                         SelectedItem="{Binding SelectedLayer}"
+                         Background="Transparent"
+                         BorderThickness="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Height="60" Margin="5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Мініатюра -->
+                                <Border Grid.Column="0" 
+                                        Background="White"
+                                        Margin="5">
+                                    <Image Source="{Binding Image}" 
+                                           Stretch="Uniform"/>
+                                </Border>
+
+                                <!-- Інфо -->
+                                <StackPanel Grid.Column="1" 
+                                            VerticalAlignment="Center"
+                                            Margin="10,0">
+                                    <TextBlock Text="{Binding ImageWidth, StringFormat='Ширина: {0}px'}" 
+                                               Foreground="White"
+                                               FontSize="10"/>
+                                    <TextBlock Text="{Binding ImageHeight, StringFormat='Висота: {0}px'}" 
+                                               Foreground="White"
+                                               FontSize="10"/>
+                                    <TextBlock Text="{Binding Angle, StringFormat='Кут: {0}°'}" 
+                                               Foreground="White"
+                                               FontSize="10"/>
+                                </StackPanel>
+
+                                <!-- Кнопки -->
+                                <StackPanel Grid.Column="2" 
+                                            Orientation="Vertical">
+                                    <Button Content="▲" 
+                                            Width="25" Height="25"
+                                            Command="{Binding DataContext.MoveLayerUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            ToolTip="Вгору"/>
+                                    <Button Content="▼" 
+                                            Width="25" Height="25"
+                                            Command="{Binding DataContext.MoveLayerDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            ToolTip="Вниз"/>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
     </Grid>
 
 </Window>

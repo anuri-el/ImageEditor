@@ -61,15 +61,12 @@ namespace ImageEditor
                 var layer = ViewModel.Layers[i];
                 if (layer.Image == null) continue;
 
-                // Центр зображення
                 double centerX = layer.X + layer.Image.PixelWidth / 2.0;
                 double centerY = layer.Y + layer.Image.PixelHeight / 2.0;
 
-                // Вектор від центру до точки кліку
                 double dx = click.X - centerX;
                 double dy = click.Y - centerY;
 
-                // Зворотнє обертання
                 double angleRad = -layer.Angle * Math.PI / 180.0;
                 double cos = Math.Cos(angleRad);
                 double sin = Math.Sin(angleRad);
@@ -77,7 +74,6 @@ namespace ImageEditor
                 double localXFromCenter = dx * cos - dy * sin;
                 double localYFromCenter = dx * sin + dy * cos;
 
-                // Перевіряємо чи в межах
                 bool isInside = Math.Abs(localXFromCenter) <= layer.Image.PixelWidth / 2.0 &&
                                Math.Abs(localYFromCenter) <= layer.Image.PixelHeight / 2.0;
 
@@ -87,7 +83,15 @@ namespace ImageEditor
                     ViewModel.SelectLayerCommand.Execute(layer);
                     UpdateSelectionRect();
 
-                    // Починаємо dragging
+                    // Права кнопка миші - показуємо Context Menu
+                    if (e.RightButton == MouseButtonState.Pressed)
+                    {
+                        ShowLayerContextMenu(e.GetPosition(this));
+                        e.Handled = true;
+                        return;
+                    }
+
+                    // Ліва кнопка - починаємо dragging
                     if (e.LeftButton == MouseButtonState.Pressed)
                     {
                         _isDraggingLayer = true;
@@ -107,6 +111,18 @@ namespace ImageEditor
             // Якщо не потрапили ні в один шар - знімаємо виділення
             ViewModel.SelectedLayer = null;
             SelectionRect.Visibility = Visibility.Collapsed;
+        }
+
+        private void ShowLayerContextMenu(Point position)
+        {
+            var contextMenu = this.FindResource("LayerContextMenu") as ContextMenu;
+            if (contextMenu != null)
+            {
+                // Передаємо ViewModel як Tag для доступу до команд
+                contextMenu.Tag = ViewModel;
+                contextMenu.PlacementTarget = this;
+                contextMenu.IsOpen = true;
+            }
         }
 
         private void Canvas_MouseMove(object sender, MouseEventArgs e)
@@ -637,11 +653,58 @@ namespace ImageEditor
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            // Ctrl+Z для undo
+            // Ctrl+Z для undo переміщення
             if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control)
             {
                 ViewModel.UndoLastMove();
                 UpdateSelectionRect();
+                e.Handled = true;
+            }
+            // Ctrl+] - вгору
+            else if (e.Key == Key.OemCloseBrackets && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (ViewModel.MoveLayerUpCommand.CanExecute(null))
+                {
+                    ViewModel.MoveLayerUpCommand.Execute(null);
+                }
+                e.Handled = true;
+            }
+            // Ctrl+[ - вниз
+            else if (e.Key == Key.OemOpenBrackets && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (ViewModel.MoveLayerDownCommand.CanExecute(null))
+                {
+                    ViewModel.MoveLayerDownCommand.Execute(null);
+                }
+                e.Handled = true;
+            }
+            // Ctrl+Shift+] - наверх
+            else if (e.Key == Key.OemCloseBrackets &&
+                     Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+            {
+                if (ViewModel.BringLayerToFrontCommand.CanExecute(null))
+                {
+                    ViewModel.BringLayerToFrontCommand.Execute(null);
+                }
+                e.Handled = true;
+            }
+            // Ctrl+Shift+[ - вниз
+            else if (e.Key == Key.OemOpenBrackets &&
+                     Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+            {
+                if (ViewModel.SendLayerToBackCommand.CanExecute(null))
+                {
+                    ViewModel.SendLayerToBackCommand.Execute(null);
+                }
+                e.Handled = true;
+            }
+            // Delete - видалити шар
+            else if (e.Key == Key.Delete)
+            {
+                if (ViewModel.DeleteLayerCommand.CanExecute(null))
+                {
+                    ViewModel.DeleteLayerCommand.Execute(null);
+                }
                 e.Handled = true;
             }
         }

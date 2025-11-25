@@ -212,6 +212,15 @@ namespace ImageEditor.ViewModels
 
         private Stack<IMoveCommand> _moveHistory = new Stack<IMoveCommand>();
 
+        private ILayerOrderCommand _currentLayerOrderCommand;
+        private Stack<ILayerOrderCommand> _layerOrderHistory = new Stack<ILayerOrderCommand>();
+
+        public RelayCommand MoveLayerUpCommand { get; }
+        public RelayCommand MoveLayerDownCommand { get; }
+        public RelayCommand BringLayerToFrontCommand { get; }
+        public RelayCommand SendLayerToBackCommand { get; }
+        public RelayCommand DeleteLayerCommand { get; }
+
         public MainViewModel()
         {
             AddImageCommand = new RelayCommand(AddImage);
@@ -231,6 +240,12 @@ namespace ImageEditor.ViewModels
             StartResizeCommand = new RelayCommand(StartResize);
             ApplyResizeCommand = new RelayCommand(ApplyResize, CanApplyResize);
             CancelResizeCommand = new RelayCommand(CancelResize);
+
+            MoveLayerUpCommand = new RelayCommand(MoveLayerUp, CanMoveLayerUp);
+            MoveLayerDownCommand = new RelayCommand(MoveLayerDown, CanMoveLayerDown);
+            BringLayerToFrontCommand = new RelayCommand(BringLayerToFront, CanBringLayerToFront);
+            SendLayerToBackCommand = new RelayCommand(SendLayerToBack, CanSendLayerToBack);
+            DeleteLayerCommand = new RelayCommand(DeleteLayer, CanDeleteLayer);
         }
 
         private void AddImage()
@@ -955,6 +970,118 @@ namespace ImageEditor.ViewModels
             {
                 var command = _moveHistory.Pop();
                 command.Undo();
+            }
+        }
+
+        private bool CanMoveLayerUp()
+        {
+            if (SelectedLayer == null) return false;
+            int index = Layers.IndexOf(SelectedLayer);
+            return index >= 0 && index < Layers.Count - 1;
+        }
+
+        private void MoveLayerUp()
+        {
+            var command = LayerOrderCommandFactory.CreateCommand(
+                Layers,
+                SelectedLayer,
+                LayerOrderAction.MoveUp);
+
+            ExecuteLayerOrderCommand(command);
+        }
+
+        private bool CanMoveLayerDown()
+        {
+            if (SelectedLayer == null) return false;
+            int index = Layers.IndexOf(SelectedLayer);
+            return index > 0;
+        }
+
+        private void MoveLayerDown()
+        {
+            var command = LayerOrderCommandFactory.CreateCommand(
+                Layers,
+                SelectedLayer,
+                LayerOrderAction.MoveDown);
+
+            ExecuteLayerOrderCommand(command);
+        }
+
+        private bool CanBringLayerToFront()
+        {
+            if (SelectedLayer == null) return false;
+            int index = Layers.IndexOf(SelectedLayer);
+            return index >= 0 && index < Layers.Count - 1;
+        }
+
+        private void BringLayerToFront()
+        {
+            var command = LayerOrderCommandFactory.CreateCommand(
+                Layers,
+                SelectedLayer,
+                LayerOrderAction.BringToFront);
+
+            ExecuteLayerOrderCommand(command);
+        }
+
+        private bool CanSendLayerToBack()
+        {
+            if (SelectedLayer == null) return false;
+            int index = Layers.IndexOf(SelectedLayer);
+            return index > 0;
+        }
+
+        private void SendLayerToBack()
+        {
+            var command = LayerOrderCommandFactory.CreateCommand(
+                Layers,
+                SelectedLayer,
+                LayerOrderAction.SendToBack);
+
+            ExecuteLayerOrderCommand(command);
+        }
+
+        private void ExecuteLayerOrderCommand(ILayerOrderCommand command)
+        {
+            if (command != null && command.CanExecute())
+            {
+                command.Execute();
+                _layerOrderHistory.Push(command);
+
+                // Оновлюємо UI
+                RotationChanged?.Invoke();
+            }
+        }
+
+        public void UndoLayerOrder()
+        {
+            if (_layerOrderHistory.Count > 0)
+            {
+                var command = _layerOrderHistory.Pop();
+                command.Undo();
+                RotationChanged?.Invoke();
+            }
+        }
+        private bool CanDeleteLayer()
+        {
+            return SelectedLayer != null && Layers.Contains(SelectedLayer);
+        }
+
+        private void DeleteLayer()
+        {
+            if (SelectedLayer == null) return;
+
+            var result = MessageBox.Show(
+                "Видалити вибраний шар?",
+                "Підтвердження",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                Layers.Remove(SelectedLayer);
+                SelectedLayer = null;
+                RotationChanged?.Invoke();
             }
         }
     }
