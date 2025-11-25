@@ -118,14 +118,49 @@ namespace ImageEditor
                 double deltaX = currentPoint.X - _layerDragStartPoint.X;
                 double deltaY = currentPoint.Y - _layerDragStartPoint.Y;
 
-                // Оновлюємо позицію шару
                 _draggedLayer.X = _layerStartX + deltaX;
                 _draggedLayer.Y = _layerStartY + deltaY;
 
-                // Оновлюємо рамку вибору
                 UpdateSelectionRect();
 
+                // Змінюємо курсор
+                EditorCanvas.Cursor = Cursors.SizeAll;
+
                 e.Handled = true;
+            }
+            else if (!ViewModel.IsCropMode && !ViewModel.IsResizeMode)
+            {
+                // Перевіряємо чи курсор над зображенням
+                Point mousePos = e.GetPosition(EditorCanvas);
+                bool overImage = false;
+
+                for (int i = ViewModel.Layers.Count - 1; i >= 0; i--)
+                {
+                    var layer = ViewModel.Layers[i];
+                    if (layer.Image == null) continue;
+
+                    double centerX = layer.X + layer.Image.PixelWidth / 2.0;
+                    double centerY = layer.Y + layer.Image.PixelHeight / 2.0;
+
+                    double dx = mousePos.X - centerX;
+                    double dy = mousePos.Y - centerY;
+
+                    double angleRad = -layer.Angle * Math.PI / 180.0;
+                    double cos = Math.Cos(angleRad);
+                    double sin = Math.Sin(angleRad);
+
+                    double localXFromCenter = dx * cos - dy * sin;
+                    double localYFromCenter = dx * sin + dy * cos;
+
+                    if (Math.Abs(localXFromCenter) <= layer.Image.PixelWidth / 2.0 &&
+                        Math.Abs(localYFromCenter) <= layer.Image.PixelHeight / 2.0)
+                    {
+                        overImage = true;
+                        break;
+                    }
+                }
+
+                EditorCanvas.Cursor = overImage ? Cursors.Hand : Cursors.Arrow;
             }
         }
 
@@ -598,6 +633,17 @@ namespace ImageEditor
 
             ViewModel.UpdateResizeArea(newX, newY, newWidth, newHeight);
             UpdateResizeGrid();
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Ctrl+Z для undo
+            if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                ViewModel.UndoLastMove();
+                UpdateSelectionRect();
+                e.Handled = true;
+            }
         }
     }
 }
