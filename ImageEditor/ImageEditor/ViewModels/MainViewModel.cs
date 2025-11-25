@@ -36,6 +36,17 @@ namespace ImageEditor.ViewModels
             }
         }
 
+        private bool _isDraggingLayer;
+        public bool IsDraggingLayer
+        {
+            get => _isDraggingLayer;
+            set
+            {
+                _isDraggingLayer = value;
+                OnPropertyChanged();
+            }
+        }
+
         private double _sliderAngle;
         public double SliderAngle
         {
@@ -197,6 +208,9 @@ namespace ImageEditor.ViewModels
 
         private ICropCommand _currentCropCommand;
         private IResizeCommand _currentResizeCommand;
+        private IMoveCommand _currentMoveCommand;
+
+        private Stack<IMoveCommand> _moveHistory = new Stack<IMoveCommand>();
 
         public MainViewModel()
         {
@@ -924,6 +938,24 @@ namespace ImageEditor.ViewModels
             ResizeArea.Y = y;
             ResizeArea.Width = width;
             ResizeArea.Height = height;
+        }
+
+        public void ExecuteMoveCommand(IMoveCommand command)
+        {
+            if (command.CanExecute())
+            {
+                command.Execute();
+                _moveHistory.Push(command);
+            }
+        }
+
+        public void UndoLastMove()
+        {
+            if (_moveHistory.Count > 0)
+            {
+                var command = _moveHistory.Pop();
+                command.Undo();
+            }
         }
     }
 }

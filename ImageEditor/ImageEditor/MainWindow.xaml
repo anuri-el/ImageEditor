@@ -271,7 +271,9 @@
                 <!-- CANVAS зображень -->
                 <Canvas x:Name="EditorCanvas"
                         Background="LightGray"
-                        MouseDown="Canvas_MouseDown">
+                        MouseDown="Canvas_MouseDown"
+                        MouseMove="Canvas_MouseMove"
+                        MouseUp="Canvas_MouseUp">
 
                     <ItemsControl ItemsSource="{Binding Layers}"
                                   HorizontalAlignment="Left"

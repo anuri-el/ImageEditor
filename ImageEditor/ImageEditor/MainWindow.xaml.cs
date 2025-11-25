@@ -1,4 +1,6 @@
-﻿using ImageEditor.ViewModels;
+﻿using ImageEditor.Commands;
+using ImageEditor.Models;
+using ImageEditor.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -22,11 +24,16 @@ namespace ImageEditor
         private double _resizeStartX, _resizeStartY, _resizeStartWidth, _resizeStartHeight;
         private string _resizeHandleType;
 
+        // Layer drag variables
+        private bool _isDraggingLayer = false;
+        private Point _layerDragStartPoint;
+        private double _layerStartX, _layerStartY;
+        private LayerModel _draggedLayer;
+
         public MainWindow()
         {
             InitializeComponent();
 
-            // Підписуємось на події після того як вікно завантажене
             this.Loaded += (s, e) =>
             {
                 ViewModel.LayerSelected += UpdateSelectionRect;
@@ -43,21 +50,26 @@ namespace ImageEditor
 
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            // Не обробляємо в режимі crop або resize
             if (ViewModel.IsCropMode || ViewModel.IsResizeMode) return;
 
             Point click = e.GetPosition(EditorCanvas);
 
+            // Перевіряємо чи клікнули на шар
             for (int i = ViewModel.Layers.Count - 1; i >= 0; i--)
             {
                 var layer = ViewModel.Layers[i];
                 if (layer.Image == null) continue;
 
+                // Центр зображення
                 double centerX = layer.X + layer.Image.PixelWidth / 2.0;
                 double centerY = layer.Y + layer.Image.PixelHeight / 2.0;
 
+                // Вектор від центру до точки кліку
                 double dx = click.X - centerX;
                 double dy = click.Y - centerY;
 
+                // Зворотнє обертання
                 double angleRad = -layer.Angle * Math.PI / 180.0;
                 double cos = Math.Cos(angleRad);
                 double sin = Math.Sin(angleRad);
@@ -65,19 +77,82 @@ namespace ImageEditor
                 double localXFromCenter = dx * cos - dy * sin;
                 double localYFromCenter = dx * sin + dy * cos;
 
+                // Перевіряємо чи в межах
                 bool isInside = Math.Abs(localXFromCenter) <= layer.Image.PixelWidth / 2.0 &&
                                Math.Abs(localYFromCenter) <= layer.Image.PixelHeight / 2.0;
 
                 if (isInside)
                 {
+                    // Вибираємо шар
                     ViewModel.SelectLayerCommand.Execute(layer);
                     UpdateSelectionRect();
+
+                    // Починаємо dragging
+                    if (e.LeftButton == MouseButtonState.Pressed)
+                    {
+                        _isDraggingLayer = true;
+                        _draggedLayer = layer;
+                        _layerDragStartPoint = click;
+                        _layerStartX = layer.X;
+                        _layerStartY = layer.Y;
+
+                        EditorCanvas.CaptureMouse();
+                        e.Handled = true;
+                    }
+
                     return;
                 }
             }
 
+            // Якщо не потрапили ні в один шар - знімаємо виділення
             ViewModel.SelectedLayer = null;
             SelectionRect.Visibility = Visibility.Collapsed;
+        }
+
+        private void Canvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_isDraggingLayer && _draggedLayer != null && e.LeftButton == MouseButtonState.Pressed)
+            {
+                Point currentPoint = e.GetPosition(EditorCanvas);
+
+                double deltaX = currentPoint.X - _layerDragStartPoint.X;
+                double deltaY = currentPoint.Y - _layerDragStartPoint.Y;
+
+                // Оновлюємо позицію шару
+                _draggedLayer.X = _layerStartX + deltaX;
+                _draggedLayer.Y = _layerStartY + deltaY;
+
+                // Оновлюємо рамку вибору
+                UpdateSelectionRect();
+
+                e.Handled = true;
+            }
+        }
+
+        private void Canvas_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (_isDraggingLayer && _draggedLayer != null)
+            {
+                // Створюємо команду для undo/redo
+                var moveCommand = new MoveLayerCommand(
+                    _draggedLayer,
+                    _draggedLayer.X,
+                    _draggedLayer.Y);
+
+                // Зберігаємо команду (якщо позиція змінилась)
+                if (Math.Abs(_draggedLayer.X - _layerStartX) > 0.1 ||
+                    Math.Abs(_draggedLayer.Y - _layerStartY) > 0.1)
+                {
+                    // Можна зберегти команду для undo
+                    ViewModel.ExecuteMoveCommand(moveCommand);
+                }
+
+                _isDraggingLayer = false;
+                _draggedLayer = null;
+
+                EditorCanvas.ReleaseMouseCapture();
+                e.Handled = true;
+            }
         }
 
         private void UpdateSelectionRect()
