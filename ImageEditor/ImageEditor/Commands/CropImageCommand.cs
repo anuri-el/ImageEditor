@@ -48,7 +48,7 @@ namespace ImageEditor.Commands
 
                 if (maxWidth <= 0 || maxHeight <= 0)
                 {
-                    System.Windows.MessageBox.Show("Неможливо обрізати зображення: область поза межами.");
+                    MessageBox.Show("Неможливо обрізати зображення: область поза межами.");
                     return;
                 }
 
@@ -59,15 +59,14 @@ namespace ImageEditor.Commands
                     (int)maxWidth,
                     (int)maxHeight);
 
-                _layer.Image = croppedImage;
-
-                // Оновлюємо позицію - зображення залишається на місці crop області
+                // ВАЖЛИВО: спочатку оновлюємо позицію, потім зображення
                 _layer.X = _cropArea.X;
                 _layer.Y = _cropArea.Y;
+                _layer.Image = croppedImage; // Це викличе OnPropertyChanged
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Помилка при обрізанні: {ex.Message}");
+                MessageBox.Show($"Помилка при обрізанні: {ex.Message}");
                 Undo();
             }
         }
@@ -83,27 +82,34 @@ namespace ImageEditor.Commands
 
         private BitmapImage CropImage(BitmapImage source, int x, int y, int width, int height)
         {
-            // Створюємо CroppedBitmap
-            var croppedBitmap = new CroppedBitmap(source,
-                new Int32Rect(x, y, width, height));
-
-            // Конвертуємо в BitmapImage
-            var encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(croppedBitmap));
-
-            using (var stream = new MemoryStream())
+            try
             {
-                encoder.Save(stream);
-                stream.Position = 0;
+                // Створюємо CroppedBitmap
+                var croppedBitmap = new CroppedBitmap(source,
+                    new Int32Rect(x, y, width, height));
 
-                var result = new BitmapImage();
-                result.BeginInit();
-                result.CacheOption = BitmapCacheOption.OnLoad;
-                result.StreamSource = stream;
-                result.EndInit();
-                result.Freeze();
+                // Конвертуємо в BitmapImage через MemoryStream
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(croppedBitmap));
 
-                return result;
+                using (var stream = new MemoryStream())
+                {
+                    encoder.Save(stream);
+                    stream.Position = 0;
+
+                    var result = new BitmapImage();
+                    result.BeginInit();
+                    result.CacheOption = BitmapCacheOption.OnLoad;
+                    result.StreamSource = stream;
+                    result.EndInit();
+                    result.Freeze(); // ВАЖЛИВО для багатопоточності
+
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Помилка створення cropped image: {ex.Message}", ex);
             }
         }
     }

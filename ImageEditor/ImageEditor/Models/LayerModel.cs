@@ -6,9 +6,24 @@ namespace ImageEditor.Models
     public class LayerModel : BaseViewModel
     {
         public string FilePath { get; set; }
-        public BitmapImage Image { get; set; }
 
-        // Оригінальні розміри для інформації
+        private BitmapImage _image;
+        public BitmapImage Image
+        {
+            get => _image;
+            set
+            {
+                _image = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ImageWidth));
+                OnPropertyChanged(nameof(ImageHeight));
+            }
+        }
+
+        // Додаткові властивості для binding
+        public double ImageWidth => Image?.PixelWidth ?? 0;
+        public double ImageHeight => Image?.PixelHeight ?? 0;
+
         public double OriginalWidth { get; set; }
         public double OriginalHeight { get; set; }
 

@@ -553,26 +553,33 @@ namespace ImageEditor.ViewModels
                 {
                     // Crop одного шару
                     _currentCropCommand = new CropImageCommand(SelectedLayer, CropArea);
+                    _currentCropCommand.Execute();
+
+                    // Примусово оновлюємо UI
+                    SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
+                    SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.X));
+                    SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Y));
                 }
                 else
                 {
-                    // Crop всього колажу - передаємо ObservableCollection напряму
+                    // Crop всього колажу
                     _currentCropCommand = new CropCollageCommand(Layers, CropArea);
-                }
-
-                if (_currentCropCommand.CanExecute())
-                {
                     _currentCropCommand.Execute();
+
+                    // Примусово оновлюємо всі шари
+                    foreach (var layer in Layers)
+                    {
+                        layer.OnPropertyChanged(nameof(layer.Image));
+                        layer.OnPropertyChanged(nameof(layer.X));
+                        layer.OnPropertyChanged(nameof(layer.Y));
+                    }
+
+                    // Оновлюємо canvas
+                    UpdateCanvasAfterCrop();
                 }
 
                 IsCropMode = false;
                 CropArea = null;
-
-                // Оновлюємо розмір canvas після crop колажу
-                if (SelectedLayer == null && Layers.Count > 0)
-                {
-                    UpdateCanvasAfterCrop();
-                }
 
                 CropModeChanged?.Invoke();
                 RotationChanged?.Invoke();
@@ -590,13 +597,28 @@ namespace ImageEditor.ViewModels
         {
             if (Layers.Count == 0) return;
 
-            // Знаходимо максимальні розміри після crop
-            double maxRight = Layers.Max(l => l.X + (l.Image?.PixelWidth ?? 0));
-            double maxBottom = Layers.Max(l => l.Y + (l.Image?.PixelHeight ?? 0));
+            // Примусово викликаємо оновлення
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                // Знаходимо максимальні розміри після crop
+                double maxRight = 0;
+                double maxBottom = 0;
 
-            // Додаємо трохи простору
-            CanvasWidth = Math.Max(800, maxRight + 100);
-            CanvasHeight = Math.Max(600, maxBottom + 100);
+                foreach (var layer in Layers)
+                {
+                    if (layer.Image == null) continue;
+
+                    double right = layer.X + layer.Image.PixelWidth;
+                    double bottom = layer.Y + layer.Image.PixelHeight;
+
+                    if (right > maxRight) maxRight = right;
+                    if (bottom > maxBottom) maxBottom = bottom;
+                }
+
+                // Оновлюємо розмір canvas
+                CanvasWidth = Math.Max(800, maxRight + 100);
+                CanvasHeight = Math.Max(600, maxBottom + 100);
+            }, System.Windows.Threading.DispatcherPriority.Render);
         }
 
         private void CancelCrop()

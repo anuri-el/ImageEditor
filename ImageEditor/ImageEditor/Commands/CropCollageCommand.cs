@@ -31,7 +31,8 @@ namespace ImageEditor.Commands
             try
             {
                 // Зберігаємо стан всіх шарів
-                foreach (var layer in _layers.ToList())
+                var layersToProcess = _layers.ToList();
+                foreach (var layer in layersToProcess)
                 {
                     _mementos[layer] = new LayerMemento(layer);
                 }
@@ -39,7 +40,7 @@ namespace ImageEditor.Commands
                 var cropRect = new Rect(_cropArea.X, _cropArea.Y, _cropArea.Width, _cropArea.Height);
 
                 // Обрізаємо кожен шар
-                foreach (var layer in _layers.ToList())
+                foreach (var layer in layersToProcess)
                 {
                     if (layer.Image == null) continue;
 
@@ -72,42 +73,33 @@ namespace ImageEditor.Commands
                     try
                     {
                         // Обрізаємо зображення
-                        var croppedBitmap = new CroppedBitmap(layer.Image,
-                            new Int32Rect(localX, localY, localWidth, localHeight));
+                        var croppedImage = CropImage(layer.Image, localX, localY, localWidth, localHeight);
 
-                        var encoder = new PngBitmapEncoder();
-                        encoder.Frames.Add(BitmapFrame.Create(croppedBitmap));
+                        // ВАЖЛИВО: оновлюємо в правильному порядку
+                        double newX = intersection.X - _cropArea.X;
+                        double newY = intersection.Y - _cropArea.Y;
 
-                        using (var stream = new MemoryStream())
-                        {
-                            encoder.Save(stream);
-                            stream.Position = 0;
-
-                            var result = new BitmapImage();
-                            result.BeginInit();
-                            result.CacheOption = BitmapCacheOption.OnLoad;
-                            result.StreamSource = stream;
-                            result.EndInit();
-                            result.Freeze();
-
-                            layer.Image = result;
-
-                            // Нова позиція відносно crop області
-                            layer.X = intersection.X - _cropArea.X;
-                            layer.Y = intersection.Y - _cropArea.Y;
-                        }
+                        layer.X = newX;
+                        layer.Y = newY;
+                        layer.Image = croppedImage; // OnPropertyChanged викликається автоматично
                     }
                     catch (Exception ex)
                     {
-                        System.Windows.MessageBox.Show($"Помилка обрізання шару: {ex.Message}");
+                        MessageBox.Show($"Помилка обрізання шару: {ex.Message}");
                         _layers.Remove(layer);
                         _removedLayers.Add(layer);
                     }
                 }
+
+                // Примусово оновлюємо колекцію
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    // Trigger collection changed
+                }, System.Windows.Threading.DispatcherPriority.Render);
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Помилка при обрізанні колажу: {ex.Message}");
+                MessageBox.Show($"Помилка при обрізанні колажу: {ex.Message}");
                 Undo();
             }
         }
@@ -124,11 +116,40 @@ namespace ImageEditor.Commands
                 }
             }
 
-            // Очищаємо список видалених
             _removedLayers.Clear();
         }
 
-        // Memento Pattern для збереження стану шару
+        private BitmapImage CropImage(BitmapImage source, int x, int y, int width, int height)
+        {
+            try
+            {
+                var croppedBitmap = new CroppedBitmap(source,
+                    new Int32Rect(x, y, width, height));
+
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(croppedBitmap));
+
+                using (var stream = new MemoryStream())
+                {
+                    encoder.Save(stream);
+                    stream.Position = 0;
+
+                    var result = new BitmapImage();
+                    result.BeginInit();
+                    result.CacheOption = BitmapCacheOption.OnLoad;
+                    result.StreamSource = stream;
+                    result.EndInit();
+                    result.Freeze();
+
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Помилка створення cropped image: {ex.Message}", ex);
+            }
+        }
+
         private class LayerMemento
         {
             public BitmapImage Image { get; }
