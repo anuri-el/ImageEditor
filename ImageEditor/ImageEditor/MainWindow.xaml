@@ -19,6 +19,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -56,6 +57,12 @@
                     Margin="10"
                     Command="{Binding StartCropCommand}"
                     IsEnabled="{Binding IsCropMode, Converter={StaticResource InverseBool}}" />
+
+            <Button Content="Розтягування" 
+                    Width="120" 
+                    Margin="10"
+                    Command="{Binding StartResizeCommand}"
+                    IsEnabled="{Binding IsResizeMode, Converter={StaticResource InverseBool}}" />
         </StackPanel>
 
         <!-- Панель слайдера обертання -->
@@ -182,8 +189,75 @@
             </Grid>
         </Border>
 
+        <!-- Панель Resize -->
+        <Border Grid.Row="3" 
+                Background="#2D5F97" 
+                Padding="10"
+                Visibility="{Binding IsResizeMode, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" 
+                           Text="Розмір:" 
+                           VerticalAlignment="Center"
+                           Foreground="White"
+                           Margin="0,0,10,0"
+                           FontWeight="Bold"/>
+
+                <StackPanel Grid.Column="1" 
+                            Orientation="Horizontal">
+                    <TextBlock Text="Ширина:" 
+                               VerticalAlignment="Center"
+                               Foreground="White"
+                               Margin="10,0,5,0"/>
+                    <TextBox Width="80"
+                             Text="{Binding ResizeArea.Width, StringFormat=F0, UpdateSourceTrigger=PropertyChanged}"
+                             VerticalAlignment="Center"
+                             IsReadOnly="True"/>
+                    <TextBlock Text="px" 
+                               VerticalAlignment="Center"
+                               Foreground="White"
+                               Margin="5,0,15,0"/>
+
+                    <TextBlock Text="Висота:" 
+                               VerticalAlignment="Center"
+                               Foreground="White"
+                               Margin="10,0,5,0"/>
+                    <TextBox Width="80"
+                             Text="{Binding ResizeArea.Height, StringFormat=F0, UpdateSourceTrigger=PropertyChanged}"
+                             VerticalAlignment="Center"
+                             IsReadOnly="True"/>
+                    <TextBlock Text="px" 
+                               VerticalAlignment="Center"
+                               Foreground="White"
+                               Margin="5,0,0,0"/>
+                </StackPanel>
+
+                <Button Grid.Column="2"
+                        Content="✓ Застосувати" 
+                        Width="120" 
+                        Margin="10,0"
+                        Background="#4CAF50"
+                        Foreground="White"
+                        Command="{Binding ApplyResizeCommand}"/>
+
+                <Button Grid.Column="3"
+                        Content="✗ Скасувати" 
+                        Width="100" 
+                        Margin="0"
+                        Background="#F44336"
+                        Foreground="White"
+                        Command="{Binding CancelResizeCommand}"/>
+            </Grid>
+        </Border>
+
         <!-- Робоча область зі скролом -->
-        <ScrollViewer Grid.Row="3" 
+        <ScrollViewer Grid.Row="4" 
                       x:Name="MainScrollViewer"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
@@ -217,7 +291,9 @@
 
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Image Source="{Binding Image}" 
+                                <Image Source="{Binding Image, Mode=OneWay}" 
+                                       Width="{Binding ImageWidth}"
+                                       Height="{Binding ImageHeight}"
                                        Stretch="None"
                                        RenderTransformOrigin="0.5,0.5">
                                     <Image.RenderTransform>
@@ -232,12 +308,11 @@
 
                     <!-- Жовта рамка для вибраного шару -->
                     <Rectangle x:Name="SelectionRect"
-                                   Stroke="Yellow"
-                                   StrokeThickness="3"
-                                   Visibility="Collapsed"
-                                   IsHitTestVisible="False"
-                                   Panel.ZIndex="1000"
-                                   SnapsToDevicePixels="True">
+                               Stroke="Yellow"
+                               StrokeThickness="3"
+                               Visibility="Collapsed"
+                               IsHitTestVisible="False"
+                               Panel.ZIndex="1000">
                         <Rectangle.RenderTransform>
                             <RotateTransform x:Name="SelRotate" />
                         </Rectangle.RenderTransform>
@@ -267,16 +342,16 @@
 
                     <!-- Crop Border -->
                     <Border x:Name="CropBorder"
-                                BorderBrush="White"
-                                BorderThickness="2"
-                                Background="Transparent"
-                                MouseDown="CropBorder_MouseDown"
-                                MouseMove="CropBorder_MouseMove"
-                                MouseUp="CropBorder_MouseUp">
+                            BorderBrush="White"
+                            BorderThickness="2"
+                            Background="Transparent"
+                            MouseDown="CropBorder_MouseDown"
+                            MouseMove="CropBorder_MouseMove"
+                            MouseUp="CropBorder_MouseUp">
 
-                        <!-- Один Grid як контейнер для сітки і ручок -->
+                        <!-- Один Grid як контейнер -->
                         <Grid>
-                            <!-- Сітка 3x3 для ліній -->
+                            <!-- Сітка 3x3 -->
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition/>
@@ -291,46 +366,144 @@
 
                                 <!-- Вертикальні лінії -->
                                 <Line Grid.Row="0" Grid.RowSpan="3" Grid.Column="1" 
-                  X1="0" Y1="0" X2="0" Y2="1" 
-                  Stretch="Fill" Stroke="White" StrokeThickness="1" Opacity="0.5"/>
+                                      X1="0" Y1="0" X2="0" Y2="1" 
+                                      Stretch="Fill" Stroke="White" StrokeThickness="1" Opacity="0.5"/>
                                 <Line Grid.Row="0" Grid.RowSpan="3" Grid.Column="2" 
-                  X1="0" Y1="0" X2="0" Y2="1" 
-                  Stretch="Fill" Stroke="White" StrokeThickness="1" Opacity="0.5"/>
+                                      X1="0" Y1="0" X2="0" Y2="1" 
+                                      Stretch="Fill" Stroke="White" StrokeThickness="1" Opacity="0.5"/>
 
                                 <!-- Горизонтальні лінії -->
                                 <Line Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" 
-                  X1="0" Y1="0" X2="1" Y2="0" 
-                  Stretch="Fill" Stroke="White" StrokeThickness="1" Opacity="0.5"/>
+                                      X1="0" Y1="0" X2="1" Y2="0" 
+                                      Stretch="Fill" Stroke="White" StrokeThickness="1" Opacity="0.5"/>
                                 <Line Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" 
-                  X1="0" Y1="0" X2="1" Y2="0" 
-                  Stretch="Fill" Stroke="White" StrokeThickness="1" Opacity="0.5"/>
+                                      X1="0" Y1="0" X2="1" Y2="0" 
+                                      Stretch="Fill" Stroke="White" StrokeThickness="1" Opacity="0.5"/>
                             </Grid>
 
-                            <!-- Canvas для ручок зміни розміру -->
+                            <!-- Canvas для ручок -->
                             <Canvas>
                                 <Ellipse x:Name="TopLeft" Fill="White" Width="12" Height="12" 
-                     Canvas.Left="-6" Canvas.Top="-6" Cursor="SizeNWSE"
-                     MouseDown="ResizeHandle_MouseDown"
-                     MouseMove="ResizeHandle_MouseMove"
-                     MouseUp="ResizeHandle_MouseUp"/>
+                                         Canvas.Left="-6" Canvas.Top="-6" Cursor="SizeNWSE"
+                                         MouseDown="CropResizeHandle_MouseDown"
+                                         MouseMove="CropResizeHandle_MouseMove"
+                                         MouseUp="CropResizeHandle_MouseUp"/>
                                 <Ellipse x:Name="TopRight" Fill="White" Width="12" Height="12" 
-                     Canvas.Right="-6" Canvas.Top="-6" Cursor="SizeNESW"
-                     MouseDown="ResizeHandle_MouseDown"
-                     MouseMove="ResizeHandle_MouseMove"
-                     MouseUp="ResizeHandle_MouseUp"/>
+                                         Canvas.Right="-6" Canvas.Top="-6" Cursor="SizeNESW"
+                                         MouseDown="CropResizeHandle_MouseDown"
+                                         MouseMove="CropResizeHandle_MouseMove"
+                                         MouseUp="CropResizeHandle_MouseUp"/>
                                 <Ellipse x:Name="BottomLeft" Fill="White" Width="12" Height="12" 
-                     Canvas.Left="-6" Canvas.Bottom="-6" Cursor="SizeNESW"
-                     MouseDown="ResizeHandle_MouseDown"
-                     MouseMove="ResizeHandle_MouseMove"
-                     MouseUp="ResizeHandle_MouseUp"/>
+                                         Canvas.Left="-6" Canvas.Bottom="-6" Cursor="SizeNESW"
+                                         MouseDown="CropResizeHandle_MouseDown"
+                                         MouseMove="CropResizeHandle_MouseMove"
+                                         MouseUp="CropResizeHandle_MouseUp"/>
                                 <Ellipse x:Name="BottomRight" Fill="White" Width="12" Height="12" 
-                     Canvas.Right="-6" Canvas.Bottom="-6" Cursor="SizeNWSE"
-                     MouseDown="ResizeHandle_MouseDown"
-                     MouseMove="ResizeHandle_MouseMove"
-                     MouseUp="ResizeHandle_MouseUp"/>
+                                         Canvas.Right="-6" Canvas.Bottom="-6" Cursor="SizeNWSE"
+                                         MouseDown="CropResizeHandle_MouseDown"
+                                         MouseMove="CropResizeHandle_MouseMove"
+                                         MouseUp="CropResizeHandle_MouseUp"/>
                             </Canvas>
                         </Grid>
 
+                    </Border>
+
+                </Canvas>
+
+                <!-- Resize Grid поверх Canvas -->
+                <Canvas x:Name="ResizeGridCanvas"
+                        Visibility="Collapsed"
+                        Panel.ZIndex="2000"
+                        Background="Transparent">
+
+                    <!-- Resize Border -->
+                    <Border x:Name="ResizeBorder"
+                            BorderBrush="Blue"
+                            BorderThickness="2"
+                            Background="Transparent">
+
+                        <Grid>
+                            <!-- Canvas для ручок -->
+                            <Canvas>
+                                <!-- Кутові ручки (пропорційний scale) -->
+                                <Ellipse x:Name="ResizeTopLeft" 
+                                         Fill="Blue" Width="14" Height="14" 
+                                         Canvas.Left="-7" Canvas.Top="-7" 
+                                         Cursor="SizeNWSE"
+                                         MouseDown="ResizeImageHandle_MouseDown"
+                                         MouseMove="ResizeImageHandle_MouseMove"
+                                         MouseUp="ResizeImageHandle_MouseUp"
+                                         Tag="TopLeft"/>
+
+                                <Ellipse x:Name="ResizeTopRight" 
+                                         Fill="Blue" Width="14" Height="14" 
+                                         Canvas.Right="-7" Canvas.Top="-7" 
+                                         Cursor="SizeNESW"
+                                         MouseDown="ResizeImageHandle_MouseDown"
+                                         MouseMove="ResizeImageHandle_MouseMove"
+                                         MouseUp="ResizeImageHandle_MouseUp"
+                                         Tag="TopRight"/>
+
+                                <Ellipse x:Name="ResizeBottomLeft" 
+                                         Fill="Blue" Width="14" Height="14" 
+                                         Canvas.Left="-7" Canvas.Bottom="-7" 
+                                         Cursor="SizeNESW"
+                                         MouseDown="ResizeImageHandle_MouseDown"
+                                         MouseMove="ResizeImageHandle_MouseMove"
+                                         MouseUp="ResizeImageHandle_MouseUp"
+                                         Tag="BottomLeft"/>
+
+                                <Ellipse x:Name="ResizeBottomRight" 
+                                         Fill="Blue" Width="14" Height="14" 
+                                         Canvas.Right="-7" Canvas.Bottom="-7" 
+                                         Cursor="SizeNWSE"
+                                         MouseDown="ResizeImageHandle_MouseDown"
+                                         MouseMove="ResizeImageHandle_MouseMove"
+                                         MouseUp="ResizeImageHandle_MouseUp"
+                                         Tag="BottomRight"/>
+
+                                <!-- Бокові ручки (розтягування по одній осі) -->
+                                <Rectangle x:Name="ResizeTop" 
+                                           Fill="Blue" Width="40" Height="8" 
+                                           Canvas.Left="-20" Canvas.Top="-4"
+                                           Cursor="SizeNS"
+                                           MouseDown="ResizeImageHandle_MouseDown"
+                                           MouseMove="ResizeImageHandle_MouseMove"
+                                           MouseUp="ResizeImageHandle_MouseUp"
+                                           Tag="Top"
+                                           RadiusX="2" RadiusY="2"/>
+
+                                <Rectangle x:Name="ResizeBottom" 
+                                           Fill="Blue" Width="40" Height="8" 
+                                           Canvas.Left="-20" Canvas.Bottom="-4"
+                                           Cursor="SizeNS"
+                                           MouseDown="ResizeImageHandle_MouseDown"
+                                           MouseMove="ResizeImageHandle_MouseMove"
+                                           MouseUp="ResizeImageHandle_MouseUp"
+                                           Tag="Bottom"
+                                           RadiusX="2" RadiusY="2"/>
+
+                                <Rectangle x:Name="ResizeLeft" 
+                                           Fill="Blue" Width="8" Height="40" 
+                                           Canvas.Left="-4" Canvas.Top="-20"
+                                           Cursor="SizeWE"
+                                           MouseDown="ResizeImageHandle_MouseDown"
+                                           MouseMove="ResizeImageHandle_MouseMove"
+                                           MouseUp="ResizeImageHandle_MouseUp"
+                                           Tag="Left"
+                                           RadiusX="2" RadiusY="2"/>
+
+                                <Rectangle x:Name="ResizeRight" 
+                                           Fill="Blue" Width="8" Height="40" 
+                                           Canvas.Right="-4" Canvas.Top="-20"
+                                           Cursor="SizeWE"
+                                           MouseDown="ResizeImageHandle_MouseDown"
+                                           MouseMove="ResizeImageHandle_MouseMove"
+                                           MouseUp="ResizeImageHandle_MouseUp"
+                                           Tag="Right"
+                                           RadiusX="2" RadiusY="2"/>
+                            </Canvas>
+                        </Grid>
                     </Border>
 
                 </Canvas>

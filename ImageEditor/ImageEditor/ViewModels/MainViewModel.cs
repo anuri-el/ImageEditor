@@ -141,9 +141,47 @@ namespace ImageEditor.ViewModels
             }
         }
 
+        private bool _isResizeMode;
+        public bool IsResizeMode
+        {
+            get => _isResizeMode;
+            set
+            {
+                if (_isResizeMode == value) return;
+
+                // Спочатку оновлюємо значення
+                _isResizeMode = value;
+                OnPropertyChanged();
+
+                // Потім скасовуємо, якщо потрібно
+                if (!value)
+                {
+                    CancelResize();
+                }
+
+                // Вимикаємо crop mode при включенні resize
+                if (value && IsCropMode)
+                {
+                    IsCropMode = false;
+                }
+            }
+        }
+
+        private ResizeArea _resizeArea;
+        public ResizeArea ResizeArea
+        {
+            get => _resizeArea;
+            set
+            {
+                _resizeArea = value;
+                OnPropertyChanged();
+            }
+        }
+
         public event Action LayerSelected;
         public event Action RotationChanged;
         public event Action CropModeChanged;
+        public event Action ResizeModeChanged;
 
         public RelayCommand AddImageCommand { get; }
         public RelayCommand SelectLayerCommand { get; }
@@ -153,8 +191,12 @@ namespace ImageEditor.ViewModels
         public RelayCommand StartCropCommand { get; }
         public RelayCommand ApplyCropCommand { get; }
         public RelayCommand CancelCropCommand { get; }
+        public RelayCommand StartResizeCommand { get; }
+        public RelayCommand ApplyResizeCommand { get; }
+        public RelayCommand CancelResizeCommand { get; }
 
         private ICropCommand _currentCropCommand;
+        private IResizeCommand _currentResizeCommand;
 
         public MainViewModel()
         {
@@ -171,6 +213,10 @@ namespace ImageEditor.ViewModels
 
             CropRatios = new ObservableCollection<CropRatio>(CropRatio.GetPredefinedRatios());
             SelectedCropRatio = CropRatios[0]; // Freeform by default
+
+            StartResizeCommand = new RelayCommand(StartResize);
+            ApplyResizeCommand = new RelayCommand(ApplyResize, CanApplyResize);
+            CancelResizeCommand = new RelayCommand(CancelResize);
         }
 
         private void AddImage()
@@ -384,6 +430,10 @@ namespace ImageEditor.ViewModels
             {
                 IsCropMode = false;
             }
+            if (IsResizeMode)
+            {
+                IsResizeMode = false;
+            }
 
             if (SelectedLayer != null)
             {
@@ -490,6 +540,11 @@ namespace ImageEditor.ViewModels
         // Crop methods
         private void StartCrop()
         {
+            if (IsResizeMode)
+            {
+                IsResizeMode = false;
+            }
+
             IsCropMode = true;
 
             // Ініціалізуємо crop область
@@ -597,27 +652,46 @@ namespace ImageEditor.ViewModels
         {
             if (Layers.Count == 0) return;
 
-            // Примусово викликаємо оновлення
             Application.Current.Dispatcher.Invoke(() =>
             {
-                // Знаходимо максимальні розміри після crop
-                double maxRight = 0;
-                double maxBottom = 0;
+                // Знаходимо bounds обрізаного колажу
+                double minX = double.MaxValue, minY = double.MaxValue;
+                double maxX = double.MinValue, maxY = double.MinValue;
 
                 foreach (var layer in Layers)
                 {
                     if (layer.Image == null) continue;
 
+                    if (layer.X < minX) minX = layer.X;
+                    if (layer.Y < minY) minY = layer.Y;
+
                     double right = layer.X + layer.Image.PixelWidth;
                     double bottom = layer.Y + layer.Image.PixelHeight;
 
-                    if (right > maxRight) maxRight = right;
-                    if (bottom > maxBottom) maxBottom = bottom;
+                    if (right > maxX) maxX = right;
+                    if (bottom > maxY) maxY = bottom;  // ✅ Виправлено тут
                 }
 
-                // Оновлюємо розмір canvas
-                CanvasWidth = Math.Max(800, maxRight + 100);
-                CanvasHeight = Math.Max(600, maxBottom + 100);
+                if (minX == double.MaxValue) return;
+
+                // Розміри колажу
+                double collageWidth = maxX - minX;
+                double collageHeight = maxY - minY;
+
+                // Оновлюємо розмір canvas з запасом
+                CanvasWidth = Math.Max(800, collageWidth + 200);
+                CanvasHeight = Math.Max(600, collageHeight + 200);
+
+                // Зміщуємо всі шари, щоб колаж був в центрі canvas
+                double offsetX = (CanvasWidth - collageWidth) / 2.0 - minX;
+                double offsetY = (CanvasHeight - collageHeight) / 2.0 - minY;
+
+                foreach (var layer in Layers)
+                {
+                    layer.X += offsetX;
+                    layer.Y += offsetY;
+                }
+
             }, System.Windows.Threading.DispatcherPriority.Render);
         }
 
@@ -651,6 +725,205 @@ namespace ImageEditor.ViewModels
             }
 
             return SelectedCropRatio;
+        }
+
+        private void StartResize()
+        {
+            try
+            {
+                // Вимикаємо crop mode
+                if (IsCropMode)
+                {
+                    IsCropMode = false;
+                }
+
+                // Ініціалізуємо resize область
+                if (SelectedLayer != null && SelectedLayer.Image != null)
+                {
+                    // Resize для вибраного шару
+                    ResizeArea = new ResizeArea
+                    {
+                        X = SelectedLayer.X,
+                        Y = SelectedLayer.Y,
+                        Width = SelectedLayer.Image.PixelWidth,
+                        Height = SelectedLayer.Image.PixelHeight,
+                        OriginalWidth = SelectedLayer.Image.PixelWidth,
+                        OriginalHeight = SelectedLayer.Image.PixelHeight
+                    };
+                }
+                else if (Layers.Count > 0)
+                {
+                    // Resize для всього колажу
+                    double minX = double.MaxValue, minY = double.MaxValue;
+                    double maxX = double.MinValue, maxY = double.MinValue;
+
+                    foreach (var layer in Layers)
+                    {
+                        if (layer.Image == null) continue;
+
+                        if (layer.X < minX) minX = layer.X;
+                        if (layer.Y < minY) minY = layer.Y;
+
+                        double right = layer.X + layer.Image.PixelWidth;
+                        double bottom = layer.Y + layer.Image.PixelHeight;
+
+                        if (right > maxX) maxX = right;
+                        if (bottom > maxY) maxY = bottom;
+                    }
+
+                    if (minX == double.MaxValue || maxX == double.MinValue)
+                    {
+                        MessageBox.Show("Не вдалося визначити розміри колажу.");
+                        return;
+                    }
+
+                    ResizeArea = new ResizeArea
+                    {
+                        X = minX,
+                        Y = minY,
+                        Width = maxX - minX,
+                        Height = maxY - minY,
+                        OriginalWidth = maxX - minX,
+                        OriginalHeight = maxY - minY
+                    };
+                }
+                else
+                {
+                    MessageBox.Show("Немає зображень для зміни розміру.");
+                    return;
+                }
+
+                // ВАЖЛИВО: спочатку встановлюємо режим, потім викликаємо подію
+                IsResizeMode = true;
+
+                // Відкладаємо виклик події, щоб UI встиг оновитись
+                Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    ResizeModeChanged?.Invoke();
+                }), System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Помилка при запуску resize: {ex.Message}");
+                IsResizeMode = false;
+                ResizeArea = null;
+            }
+        }
+
+        private bool CanApplyResize()
+        {
+            return IsResizeMode && ResizeArea != null && ResizeArea.Width > 0 && ResizeArea.Height > 0;
+        }
+
+        private void ApplyResize()
+        {
+            if (!CanApplyResize()) return;
+
+            try
+            {
+                if (ResizeArea.Width <= 0 || ResizeArea.Height <= 0)
+                {
+                    MessageBox.Show("Некоректні розміри.");
+                    return;
+                }
+
+                if (SelectedLayer != null)
+                {
+                    // Resize одного шару
+                    _currentResizeCommand = new ResizeImageCommand(
+                        SelectedLayer,
+                        ResizeArea.Width,
+                        ResizeArea.Height);
+
+                    if (_currentResizeCommand.CanExecute())
+                    {
+                        _currentResizeCommand.Execute();
+
+                        // Оновлюємо UI
+                        SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
+                        SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.X));
+                        SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Y));
+                    }
+                }
+                else if (Layers.Count > 0)
+                {
+                    // Resize всього колажу
+                    if (ResizeArea.OriginalWidth <= 0 || ResizeArea.OriginalHeight <= 0)
+                    {
+                        MessageBox.Show("Некоректні оригінальні розміри.");
+                        return;
+                    }
+
+                    double scaleX = ResizeArea.Width / ResizeArea.OriginalWidth;
+                    double scaleY = ResizeArea.Height / ResizeArea.OriginalHeight;
+
+                    if (double.IsNaN(scaleX) || double.IsNaN(scaleY) ||
+                        double.IsInfinity(scaleX) || double.IsInfinity(scaleY))
+                    {
+                        MessageBox.Show("Некоректний масштаб.");
+                        return;
+                    }
+
+                    _currentResizeCommand = new ResizeCollageCommand(Layers, scaleX, scaleY);
+
+                    if (_currentResizeCommand.CanExecute())
+                    {
+                        _currentResizeCommand.Execute();
+
+                        // Оновлюємо всі шари
+                        foreach (var layer in Layers)
+                        {
+                            layer.OnPropertyChanged(nameof(layer.Image));
+                            layer.OnPropertyChanged(nameof(layer.X));
+                            layer.OnPropertyChanged(nameof(layer.Y));
+                        }
+                    }
+                }
+
+                IsResizeMode = false;
+                ResizeArea = null;
+
+                ResizeModeChanged?.Invoke();
+                RotationChanged?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Помилка при застосуванні resize: {ex.Message}\n{ex.StackTrace}");
+                IsResizeMode = false;
+                ResizeArea = null;
+                ResizeModeChanged?.Invoke();
+            }
+        }
+
+        private void CancelResize()
+        {
+            try
+            {
+                ResizeArea = null;
+
+                // Не викликаємо IsResizeMode = false тут, щоб уникнути рекурсії
+                if (_isResizeMode)
+                {
+                    _isResizeMode = false;
+                    OnPropertyChanged(nameof(IsResizeMode));
+                }
+
+                ResizeModeChanged?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error canceling resize: {ex.Message}");
+            }
+        }
+
+        public void UpdateResizeArea(double x, double y, double width, double height)
+        {
+            if (ResizeArea == null) return;
+
+            ResizeArea.X = x;
+            ResizeArea.Y = y;
+            ResizeArea.Width = width;
+            ResizeArea.Height = height;
         }
     }
 }
