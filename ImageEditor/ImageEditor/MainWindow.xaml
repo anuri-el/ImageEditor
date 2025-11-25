@@ -232,11 +232,12 @@
 
                     <!-- Жовта рамка для вибраного шару -->
                     <Rectangle x:Name="SelectionRect"
-                               Stroke="Yellow"
-                               StrokeThickness="3"
-                               Visibility="Collapsed"
-                               IsHitTestVisible="False"
-                               Panel.ZIndex="1000">
+                                   Stroke="Yellow"
+                                   StrokeThickness="3"
+                                   Visibility="Collapsed"
+                                   IsHitTestVisible="False"
+                                   Panel.ZIndex="1000"
+                                   SnapsToDevicePixels="True">
                         <Rectangle.RenderTransform>
                             <RotateTransform x:Name="SelRotate" />
                         </Rectangle.RenderTransform>

@@ -34,26 +34,34 @@ namespace ImageEditor
 
             Point click = e.GetPosition(EditorCanvas);
 
+            // Перевіряємо шари від верхнього до нижнього (в зворотному порядку)
             for (int i = ViewModel.Layers.Count - 1; i >= 0; i--)
             {
                 var layer = ViewModel.Layers[i];
                 if (layer.Image == null) continue;
 
+                // Центр зображення (точка обертання)
                 double centerX = layer.X + layer.Image.PixelWidth / 2.0;
                 double centerY = layer.Y + layer.Image.PixelHeight / 2.0;
 
+                // Вектор від центру до точки кліку
                 double dx = click.X - centerX;
                 double dy = click.Y - centerY;
 
+                // Зворотнє обертання (щоб перевести клік в локальні координати зображення)
                 double angleRad = -layer.Angle * Math.PI / 180.0;
                 double cos = Math.Cos(angleRad);
                 double sin = Math.Sin(angleRad);
 
-                double localX = dx * cos - dy * sin + layer.Image.PixelWidth / 2.0;
-                double localY = dx * sin + dy * cos + layer.Image.PixelHeight / 2.0;
+                // Локальні координати відносно центру
+                double localXFromCenter = dx * cos - dy * sin;
+                double localYFromCenter = dx * sin + dy * cos;
 
-                if (localX >= 0 && localX <= layer.Image.PixelWidth &&
-                    localY >= 0 && localY <= layer.Image.PixelHeight)
+                // Перевіряємо чи потрапили в межі зображення
+                bool isInside = Math.Abs(localXFromCenter) <= layer.Image.PixelWidth / 2.0 &&
+                               Math.Abs(localYFromCenter) <= layer.Image.PixelHeight / 2.0;
+
+                if (isInside)
                 {
                     ViewModel.SelectLayerCommand.Execute(layer);
                     UpdateSelectionRect();
@@ -61,6 +69,7 @@ namespace ImageEditor
                 }
             }
 
+            // Якщо не потрапили ні в один шар - знімаємо виділення
             ViewModel.SelectedLayer = null;
             SelectionRect.Visibility = Visibility.Collapsed;
         }
@@ -83,18 +92,26 @@ namespace ImageEditor
                 double angle = layer.Angle;
                 double rad = Math.PI * angle / 180.0;
 
+                // Обчислюємо розміри повернутого прямокутника
                 double w2 = Math.Abs(w * Math.Cos(rad)) + Math.Abs(h * Math.Sin(rad));
                 double h2 = Math.Abs(w * Math.Sin(rad)) + Math.Abs(h * Math.Cos(rad));
 
                 SelectionRect.Width = w2;
                 SelectionRect.Height = h2;
 
-                Canvas.SetLeft(SelectionRect, layer.X - (w2 - w) / 2);
-                Canvas.SetTop(SelectionRect, layer.Y - (h2 - h) / 2);
+                // Позиціонуємо рамку так, щоб вона охоплювала весь повернутий прямокутник
+                // Центр зображення
+                double centerX = layer.X + w / 2.0;
+                double centerY = layer.Y + h / 2.0;
 
+                // Позиція верхнього лівого кута рамки
+                Canvas.SetLeft(SelectionRect, centerX - w2 / 2.0);
+                Canvas.SetTop(SelectionRect, centerY - h2 / 2.0);
+
+                // Обертаємо рамку навколо її центру
                 SelRotate.Angle = angle;
-                SelRotate.CenterX = SelectionRect.Width / 2;
-                SelRotate.CenterY = SelectionRect.Height / 2;
+                SelRotate.CenterX = w2 / 2.0;
+                SelRotate.CenterY = h2 / 2.0;
             }
             catch (Exception ex)
             {

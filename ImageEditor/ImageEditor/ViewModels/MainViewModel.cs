@@ -255,86 +255,127 @@ namespace ImageEditor.ViewModels
             if (dlg.ShowDialog() != true)
                 return;
 
-            var canvas = Application.Current.MainWindow.FindName("EditorCanvas") as System.Windows.Controls.Canvas;
-            if (canvas == null)
+            if (Layers.Count == 0)
             {
-                MessageBox.Show("Canvas не знайдено!");
+                MessageBox.Show("Немає зображень для збереження.");
                 return;
             }
 
-            double minX = double.MaxValue, minY = double.MaxValue;
-            double maxX = 0, maxY = 0;
-
-            foreach (var layer in Layers)
+            try
             {
-                if (layer.Image == null) continue;
+                // Знаходимо bounds всіх зображень з урахуванням обертання
+                double minX = double.MaxValue, minY = double.MaxValue;
+                double maxX = double.MinValue, maxY = double.MinValue;
 
-                double right = layer.X + layer.Image.PixelWidth;
-                double bottom = layer.Y + layer.Image.PixelHeight;
+                foreach (var layer in Layers)
+                {
+                    if (layer.Image == null) continue;
 
-                if (layer.X < minX) minX = layer.X;
-                if (layer.Y < minY) minY = layer.Y;
+                    // Отримуємо bounds повернутого зображення
+                    double w = layer.Image.PixelWidth;
+                    double h = layer.Image.PixelHeight;
+                    double angle = layer.Angle;
+                    double rad = Math.PI * angle / 180.0;
 
-                if (right > maxX) maxX = right;
-                if (bottom > maxY) maxY = bottom;
+                    double w2 = Math.Abs(w * Math.Cos(rad)) + Math.Abs(h * Math.Sin(rad));
+                    double h2 = Math.Abs(w * Math.Sin(rad)) + Math.Abs(h * Math.Cos(rad));
+
+                    double centerX = layer.X + w / 2.0;
+                    double centerY = layer.Y + h / 2.0;
+
+                    double left = centerX - w2 / 2.0;
+                    double top = centerY - h2 / 2.0;
+                    double right = centerX + w2 / 2.0;
+                    double bottom = centerY + h2 / 2.0;
+
+                    if (left < minX) minX = left;
+                    if (top < minY) minY = top;
+                    if (right > maxX) maxX = right;
+                    if (bottom > maxY) maxY = bottom;
+                }
+
+                if (minX == double.MaxValue)
+                    return;
+
+                double finalWidth = maxX - minX;
+                double finalHeight = maxY - minY;
+
+                if (finalWidth <= 0 || finalHeight <= 0)
+                {
+                    MessageBox.Show("Шари порожні.");
+                    return;
+                }
+
+                // Створюємо RenderTargetBitmap
+                RenderTargetBitmap rtb = new RenderTargetBitmap(
+                    (int)Math.Ceiling(finalWidth),
+                    (int)Math.Ceiling(finalHeight),
+                    96, 96,
+                    PixelFormats.Pbgra32);
+
+                DrawingVisual dv = new DrawingVisual();
+                using (DrawingContext ctx = dv.RenderOpen())
+                {
+                    // Малюємо тільки зображення, без рамок
+                    foreach (var layer in Layers)
+                    {
+                        if (layer.Image == null) continue;
+
+                        ctx.PushTransform(new TranslateTransform(
+                            layer.X + layer.Image.PixelWidth / 2.0 - minX,
+                            layer.Y + layer.Image.PixelHeight / 2.0 - minY));
+
+                        ctx.PushTransform(new RotateTransform(layer.Angle));
+
+                        ctx.DrawImage(layer.Image,
+                            new Rect(
+                                -layer.Image.PixelWidth / 2.0,
+                                -layer.Image.PixelHeight / 2.0,
+                                layer.Image.PixelWidth,
+                                layer.Image.PixelHeight));
+
+                        ctx.Pop(); // RotateTransform
+                        ctx.Pop(); // TranslateTransform
+                    }
+                }
+
+                rtb.Render(dv);
+
+                // Вибираємо encoder
+                BitmapEncoder encoder;
+                string ext = System.IO.Path.GetExtension(dlg.FileName).ToLower();
+
+                switch (ext)
+                {
+                    case ".jpg":
+                    case ".jpeg":
+                        encoder = new JpegBitmapEncoder();
+                        break;
+                    case ".bmp":
+                        encoder = new BmpBitmapEncoder();
+                        break;
+                    case ".tiff":
+                        encoder = new TiffBitmapEncoder();
+                        break;
+                    case ".gif":
+                        encoder = new GifBitmapEncoder();
+                        break;
+                    default:
+                        encoder = new PngBitmapEncoder();
+                        break;
+                }
+
+                encoder.Frames.Add(BitmapFrame.Create(rtb));
+
+                using (FileStream fs = new FileStream(dlg.FileName, FileMode.Create))
+                    encoder.Save(fs);
+
+                MessageBox.Show("Файл збережено успішно!");
             }
-
-            if (minX == double.MaxValue)
-                return;
-
-            double finalWidth = maxX - minX;
-            double finalHeight = maxY - minY;
-
-            if (finalWidth <= 0 || finalHeight <= 0)
+            catch (Exception ex)
             {
-                MessageBox.Show("Шари порожні.");
-                return;
+                MessageBox.Show($"Помилка при збереженні: {ex.Message}");
             }
-
-            RenderTargetBitmap rtb = new RenderTargetBitmap(
-                (int)finalWidth,
-                (int)finalHeight,
-                96, 96,
-                PixelFormats.Pbgra32);
-
-            var dv = new DrawingVisual();
-            using (var ctx = dv.RenderOpen())
-            {
-                ctx.PushTransform(new TranslateTransform(-minX, -minY));
-                ctx.DrawRectangle(new VisualBrush(canvas), null, new Rect(new Point(), new Size(canvas.ActualWidth, canvas.ActualHeight)));
-            }
-
-            rtb.Render(dv);
-
-            BitmapEncoder encoder;
-
-            string ext = System.IO.Path.GetExtension(dlg.FileName).ToLower();
-
-            switch (ext)
-            {
-                case ".jpg":
-                    encoder = new JpegBitmapEncoder();
-                    break;
-                case ".bmp":
-                    encoder = new BmpBitmapEncoder();
-                    break;
-                case ".tiff":
-                    encoder = new TiffBitmapEncoder();
-                    break;
-                case ".gif":
-                    encoder = new GifBitmapEncoder();
-                    break;
-                default:
-                    encoder = new PngBitmapEncoder();
-                    break;
-            }
-
-            encoder.Frames.Add(BitmapFrame.Create(rtb));
-
-            using (FileStream fs = new FileStream(dlg.FileName, FileMode.Create))
-                encoder.Save(fs);
-
-            MessageBox.Show("Файл збережено успішно!");
         }
 
         private void Rotate(int angle)
