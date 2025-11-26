@@ -115,13 +115,19 @@ namespace ImageEditor
 
         private void ShowLayerContextMenu(Point position)
         {
-            var contextMenu = this.FindResource("LayerContextMenu") as ContextMenu;
-            if (contextMenu != null)
+            try
             {
-                // Передаємо ViewModel як Tag для доступу до команд
-                contextMenu.Tag = ViewModel;
-                contextMenu.PlacementTarget = this;
-                contextMenu.IsOpen = true;
+                var contextMenu = this.FindResource("LayerContextMenu") as ContextMenu;
+                if (contextMenu != null && ViewModel.SelectedLayer != null)
+                {
+                    contextMenu.PlacementTarget = this;
+                    contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
+                    contextMenu.IsOpen = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error showing context menu: {ex.Message}");
             }
         }
 
@@ -710,13 +716,63 @@ namespace ImageEditor
         }
         private void ToggleLayersPanel(object sender, RoutedEventArgs e)
         {
-            if (LayersPanel.Visibility == Visibility.Visible)
+            try
             {
-                LayersPanel.Visibility = Visibility.Collapsed;
+                if (LayersPanel != null)
+                {
+                    if (LayersPanel.Visibility == Visibility.Visible)
+                    {
+                        LayersPanel.Visibility = Visibility.Collapsed;
+                    }
+                    else
+                    {
+                        LayersPanel.Visibility = Visibility.Visible;
+                    }
+                }
             }
-            else
+            catch (Exception ex)
             {
-                LayersPanel.Visibility = Visibility.Visible;
+                MessageBox.Show($"Помилка: {ex.Message}");
+            }
+        }
+
+        private void MoveLayerUp_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel.MoveLayerUpCommand.CanExecute(null))
+            {
+                ViewModel.MoveLayerUpCommand.Execute(null);
+            }
+        }
+
+        private void MoveLayerDown_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel.MoveLayerDownCommand.CanExecute(null))
+            {
+                ViewModel.MoveLayerDownCommand.Execute(null);
+            }
+        }
+
+        private void BringLayerToFront_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel.BringLayerToFrontCommand.CanExecute(null))
+            {
+                ViewModel.BringLayerToFrontCommand.Execute(null);
+            }
+        }
+
+        private void SendLayerToBack_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel.SendLayerToBackCommand.CanExecute(null))
+            {
+                ViewModel.SendLayerToBackCommand.Execute(null);
+            }
+        }
+
+        private void DeleteLayer_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel.DeleteLayerCommand.CanExecute(null))
+            {
+                ViewModel.DeleteLayerCommand.Execute(null);
             }
         }
     }

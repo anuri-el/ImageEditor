@@ -19,22 +19,22 @@
         <!-- Context Menu для шарів -->
         <ContextMenu x:Key="LayerContextMenu">
             <MenuItem Header="↑ Вгору" 
-                      Command="{Binding PlacementTarget.Tag.MoveLayerUpCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                      InputGestureText="Ctrl+]"/>
+              Click="MoveLayerUp_Click"
+              InputGestureText="Ctrl+]"/>
             <MenuItem Header="↓ Вниз" 
-                      Command="{Binding PlacementTarget.Tag.MoveLayerDownCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                      InputGestureText="Ctrl+["/>
+              Click="MoveLayerDown_Click"
+              InputGestureText="Ctrl+["/>
             <Separator/>
             <MenuItem Header="⬆ Перемістити наверх" 
-                      Command="{Binding PlacementTarget.Tag.BringLayerToFrontCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                      InputGestureText="Ctrl+Shift+]"/>
+              Click="BringLayerToFront_Click"
+              InputGestureText="Ctrl+Shift+]"/>
             <MenuItem Header="⬇ Перемістити вниз" 
-                      Command="{Binding PlacementTarget.Tag.SendLayerToBackCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                      InputGestureText="Ctrl+Shift+["/>
+              Click="SendLayerToBack_Click"
+              InputGestureText="Ctrl+Shift+["/>
             <Separator/>
             <MenuItem Header="❌ Видалити шар" 
-                      Command="{Binding PlacementTarget.Tag.DeleteLayerCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                      InputGestureText="Delete"/>
+              Click="DeleteLayer_Click"
+              InputGestureText="Delete"/>
         </ContextMenu>
     </Window.Resources>
 

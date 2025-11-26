@@ -698,7 +698,7 @@ namespace ImageEditor.ViewModels
                     double bottom = layer.Y + layer.Image.PixelHeight;
 
                     if (right > maxX) maxX = right;
-                    if (bottom > maxY) maxY = bottom;  // ✅ Виправлено тут
+                    if (bottom > maxY) maxY = bottom;
                 }
 
                 if (minX == double.MaxValue) return;
@@ -707,13 +707,22 @@ namespace ImageEditor.ViewModels
                 double collageWidth = maxX - minX;
                 double collageHeight = maxY - minY;
 
-                // Оновлюємо розмір canvas з запасом
-                CanvasWidth = Math.Max(800, collageWidth + 200);
-                CanvasHeight = Math.Max(600, collageHeight + 200);
+                // ВАЖЛИВО: Canvas має бути більшим за колаж
+                // Беремо максимум між поточним розміром і новим розміром + запас
+                double newCanvasWidth = Math.Max(collageWidth + 400, 1000);
+                double newCanvasHeight = Math.Max(collageHeight + 400, 700);
 
-                // Зміщуємо всі шари, щоб колаж був в центрі canvas
-                double offsetX = (CanvasWidth - collageWidth) / 2.0 - minX;
-                double offsetY = (CanvasHeight - collageHeight) / 2.0 - minY;
+                // Зберігаємо старі розміри
+                double oldCanvasWidth = CanvasWidth;
+                double oldCanvasHeight = CanvasHeight;
+
+                // Оновлюємо розмір canvas
+                CanvasWidth = newCanvasWidth;
+                CanvasHeight = newCanvasHeight;
+
+                // Центруємо колаж на новому canvas
+                double offsetX = (newCanvasWidth - collageWidth) / 2.0 - minX;
+                double offsetY = (newCanvasHeight - collageHeight) / 2.0 - minY;
 
                 foreach (var layer in Layers)
                 {
