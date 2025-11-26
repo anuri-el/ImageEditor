@@ -708,5 +708,16 @@ namespace ImageEditor
                 e.Handled = true;
             }
         }
+        private void ToggleLayersPanel(object sender, RoutedEventArgs e)
+        {
+            if (LayersPanel.Visibility == Visibility.Visible)
+            {
+                LayersPanel.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                LayersPanel.Visibility = Visibility.Visible;
+            }
+        }
     }
 }
