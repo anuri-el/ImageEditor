@@ -33,6 +33,8 @@ namespace ImageEditor.ViewModels
                 {
                     SliderAngle = 0;
                 }
+
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 
@@ -234,9 +236,6 @@ namespace ImageEditor.ViewModels
             ApplyCropCommand = new RelayCommand(ApplyCrop, CanApplyCrop);
             CancelCropCommand = new RelayCommand(CancelCrop);
 
-            CropRatios = new ObservableCollection<CropRatio>(CropRatio.GetPredefinedRatios());
-            SelectedCropRatio = CropRatios[0]; // Freeform by default
-
             StartResizeCommand = new RelayCommand(StartResize);
             ApplyResizeCommand = new RelayCommand(ApplyResize, CanApplyResize);
             CancelResizeCommand = new RelayCommand(CancelResize);
@@ -246,6 +245,9 @@ namespace ImageEditor.ViewModels
             BringLayerToFrontCommand = new RelayCommand(BringLayerToFront, CanBringLayerToFront);
             SendLayerToBackCommand = new RelayCommand(SendLayerToBack, CanSendLayerToBack);
             DeleteLayerCommand = new RelayCommand(DeleteLayer, CanDeleteLayer);
+
+            CropRatios = new ObservableCollection<CropRatio>(CropRatio.GetPredefinedRatios());
+            SelectedCropRatio = CropRatios[0];
         }
 
         private void AddImage()
@@ -707,23 +709,17 @@ namespace ImageEditor.ViewModels
                 double collageWidth = maxX - minX;
                 double collageHeight = maxY - minY;
 
-                // ВАЖЛИВО: Canvas має бути більшим за колаж
-                // Беремо максимум між поточним розміром і новим розміром + запас
-                double newCanvasWidth = Math.Max(collageWidth + 400, 1000);
-                double newCanvasHeight = Math.Max(collageHeight + 400, 700);
+                // Центруємо на існуючому canvas (не змінюючи його розмір)
+                double centerX = CanvasWidth / 2.0;
+                double centerY = CanvasHeight / 2.0;
 
-                // Зберігаємо старі розміри
-                double oldCanvasWidth = CanvasWidth;
-                double oldCanvasHeight = CanvasHeight;
+                double collageCenterX = minX + collageWidth / 2.0;
+                double collageCenterY = minY + collageHeight / 2.0;
 
-                // Оновлюємо розмір canvas
-                CanvasWidth = newCanvasWidth;
-                CanvasHeight = newCanvasHeight;
+                double offsetX = centerX - collageCenterX;
+                double offsetY = centerY - collageCenterY;
 
-                // Центруємо колаж на новому canvas
-                double offsetX = (newCanvasWidth - collageWidth) / 2.0 - minX;
-                double offsetY = (newCanvasHeight - collageHeight) / 2.0 - minY;
-
+                // Застосовуємо зміщення до всіх шарів
                 foreach (var layer in Layers)
                 {
                     layer.X += offsetX;
@@ -1059,6 +1055,9 @@ namespace ImageEditor.ViewModels
 
                 // Оновлюємо UI
                 RotationChanged?.Invoke();
+
+                // Оновлюємо стан команд
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 

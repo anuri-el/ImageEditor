@@ -301,11 +301,15 @@
 
                 <!-- Один Grid як контейнер для всього -->
                 <Grid Width="{Binding CanvasWidth}"
-                      Height="{Binding CanvasHeight}">
+                      Height="{Binding CanvasHeight}"
+                      MinWidth="1000"
+                      MinHeight="700">
 
                     <!-- CANVAS зображень -->
                     <Canvas x:Name="EditorCanvas"
                             Background="#2D2D30"
+                            Width="{Binding CanvasWidth}"
+                            Height="{Binding CanvasHeight}"
                             MouseDown="Canvas_MouseDown"
                             MouseMove="Canvas_MouseMove"
                             MouseUp="Canvas_MouseUp">
