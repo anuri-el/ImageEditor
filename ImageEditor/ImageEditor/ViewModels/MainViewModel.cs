@@ -55,10 +55,12 @@ namespace ImageEditor.ViewModels
             get => _sliderAngle;
             set
             {
-                if (Math.Abs(_sliderAngle - value) < 0.01) return;
+                double roundedValue = Math.Round(value);
 
-                double delta = value - _sliderAngle;
-                _sliderAngle = value;
+                if (Math.Abs(_sliderAngle - roundedValue) < 0.5) return;
+
+                double delta = roundedValue - _sliderAngle;
+                _sliderAngle = roundedValue;
                 OnPropertyChanged();
 
                 ApplySliderRotation(delta);
@@ -201,6 +203,7 @@ namespace ImageEditor.ViewModels
         public RelayCommand SaveCommand { get; }
         public ICommand RotateLeftCommand { get; }
         public ICommand RotateRightCommand { get; }
+        public RelayCommand ResetRotationCommand { get; }
         public RelayCommand StartCropCommand { get; }
         public RelayCommand ApplyCropCommand { get; }
         public RelayCommand CancelCropCommand { get; }
@@ -231,6 +234,7 @@ namespace ImageEditor.ViewModels
 
             RotateLeftCommand = new RelayCommand(_ => Rotate(-90));
             RotateRightCommand = new RelayCommand(_ => Rotate(90));
+            ResetRotationCommand = new RelayCommand(ResetRotation, CanResetRotation);
 
             StartCropCommand = new RelayCommand(StartCrop);
             ApplyCropCommand = new RelayCommand(ApplyCrop, CanApplyCrop);
@@ -468,16 +472,21 @@ namespace ImageEditor.ViewModels
 
             if (SelectedLayer != null)
             {
-                SelectedLayer.Angle = (SelectedLayer.Angle + angle) % 360;
+                // Обертаємо тільки вибраний шар
+                SelectedLayer.Angle = NormalizeAngle(SelectedLayer.Angle + angle);
+                // Оновлюємо слайдер до найближчого значення в діапазоні
                 SliderAngle = GetCurrentSliderAngle(SelectedLayer.Angle);
             }
             else if (Layers.Count > 0)
             {
+                // Обертаємо весь колаж як одне ціле
                 RotateCollage(angle);
+                // Після повороту на 90° слайдер скидаємо
                 SliderAngle = 0;
             }
 
             RotationChanged?.Invoke();
+            System.Windows.Input.CommandManager.InvalidateRequerySuggested();
         }
 
         private void RotateCollage(int angleDelta)
@@ -532,9 +541,15 @@ namespace ImageEditor.ViewModels
 
         private void ApplySliderRotation(double delta)
         {
+            if (Math.Abs(delta) < 0.5) return; // Ігноруємо дуже малі зміни
+
             if (IsCropMode)
             {
                 IsCropMode = false;
+            }
+            if (IsResizeMode)
+            {
+                IsResizeMode = false;
             }
 
             if (SelectedLayer != null)
@@ -551,14 +566,21 @@ namespace ImageEditor.ViewModels
 
         private double GetCurrentSliderAngle(int angle)
         {
+            // Нормалізуємо кут до діапазону 0-360
             int normalized = ((angle % 360) + 360) % 360;
-            int baseAngle = (int)(Math.Round(normalized / 90.0) * 90) % 360;
-            int diff = normalized - baseAngle;
 
+            // Знаходимо найближчий базовий кут (0, 90, 180, 270)
+            int nearestBase = (int)(Math.Round(normalized / 90.0) * 90) % 360;
+
+            // Різниця від базового кута
+            int diff = normalized - nearestBase;
+
+            // Коригуємо якщо більше 180
             if (diff > 180) diff -= 360;
             if (diff < -180) diff += 360;
 
-            return Math.Max(-45, Math.Min(45, diff));
+            // Обмежуємо діапазоном -45...45 і округлюємо
+            return Math.Round(Math.Max(-45, Math.Min(45, (double)diff)));
         }
 
         private int NormalizeAngle(double angle)
@@ -1091,6 +1113,34 @@ namespace ImageEditor.ViewModels
                 SelectedLayer = null;
                 RotationChanged?.Invoke();
             }
+        }
+        private bool CanResetRotation()
+        {
+            if (SelectedLayer != null)
+            {
+                return SelectedLayer.Angle != 0;
+            }
+            return Layers.Any(l => l.Angle != 0);
+        }
+
+        private void ResetRotation()
+        {
+            if (SelectedLayer != null)
+            {
+                SelectedLayer.Angle = 0;
+                SliderAngle = 0;
+            }
+            else
+            {
+                foreach (var layer in Layers)
+                {
+                    layer.Angle = 0;
+                }
+                SliderAngle = 0;
+            }
+
+            RotationChanged?.Invoke();
+            System.Windows.Input.CommandManager.InvalidateRequerySuggested();
         }
     }
 }

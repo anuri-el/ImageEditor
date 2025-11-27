@@ -129,35 +129,68 @@
                                            FontSize="11"
                                            Margin="0,0,0,5"/>
 
-                                <TextBlock Text="{Binding SliderAngle, StringFormat={}{0:F1}°}" 
-                                           Foreground="#4EC9B0"
-                                           FontSize="12"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Center"
-                                           Margin="0,0,0,5"/>
+                                <Border Background="#1E1E1E" 
+                                        Padding="10,5"
+                                        CornerRadius="3"
+                                        Margin="0,0,0,5">
+                                    <TextBlock HorizontalAlignment="Center">
+                <Run Text="{Binding SliderAngle, StringFormat={}{0:F0}°}" 
+                     Foreground="#4EC9B0"
+                     FontSize="16"
+                     FontWeight="Bold"/>
+                                    </TextBlock>
+                                </Border>
 
                                 <Slider Minimum="-45"
                                         Maximum="45"
                                         Value="{Binding SliderAngle, Mode=TwoWay}"
-                                        TickFrequency="5"
-                                        IsSnapToTickEnabled="False"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
                                         VerticalAlignment="Center"
-                                        Margin="0,0,0,10"/>
+                                        Margin="0,0,0,5"/>
 
-                                <StackPanel Orientation="Horizontal" 
-                                            HorizontalAlignment="Center">
-                                    <TextBlock Text="-45°" 
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="-45°" 
                                                Foreground="#999"
-                                               FontSize="10"/>
-                                    <TextBlock Text="0°" 
+                                               FontSize="10"
+                                               HorizontalAlignment="Left"/>
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="0°" 
                                                Foreground="#999"
                                                FontSize="10"
                                                HorizontalAlignment="Center"/>
-                                    <TextBlock Text="+45°" 
+
+                                    <TextBlock Grid.Column="2"
+                                               Text="+45°" 
                                                Foreground="#999"
                                                FontSize="10"
                                                HorizontalAlignment="Right"/>
-                                </StackPanel>
+                                </Grid>
+
+                                <!-- Кнопка Reset -->
+                                <Button Content="⟲ Скинути обертання" 
+                                        Height="35"
+                                        Command="{Binding ResetRotationCommand}"
+                                        ToolTip="Скинути кут до 0°"
+                                        >
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource ToolButtonStyle}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter Property="Opacity" Value="0.5"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
                             </StackPanel>
                         </Expander>
 

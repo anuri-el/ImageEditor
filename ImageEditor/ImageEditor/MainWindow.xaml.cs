@@ -61,19 +61,24 @@ namespace ImageEditor
                 var layer = ViewModel.Layers[i];
                 if (layer.Image == null) continue;
 
+                // Центр зображення (точка обертання)
                 double centerX = layer.X + layer.Image.PixelWidth / 2.0;
                 double centerY = layer.Y + layer.Image.PixelHeight / 2.0;
 
+                // Вектор від центру до точки кліку
                 double dx = click.X - centerX;
                 double dy = click.Y - centerY;
 
+                // Зворотнє обертання для перевірки hitTest
                 double angleRad = -layer.Angle * Math.PI / 180.0;
                 double cos = Math.Cos(angleRad);
                 double sin = Math.Sin(angleRad);
 
+                // Локальні координати відносно центру (після зворотного обертання)
                 double localXFromCenter = dx * cos - dy * sin;
                 double localYFromCenter = dx * sin + dy * cos;
 
+                // Перевіряємо чи в межах зображення
                 bool isInside = Math.Abs(localXFromCenter) <= layer.Image.PixelWidth / 2.0 &&
                                Math.Abs(localYFromCenter) <= layer.Image.PixelHeight / 2.0;
 
@@ -227,24 +232,19 @@ namespace ImageEditor
 
                 double w = layer.Image.PixelWidth;
                 double h = layer.Image.PixelHeight;
-                double angle = layer.Angle;
-                double rad = Math.PI * angle / 180.0;
 
-                double w2 = Math.Abs(w * Math.Cos(rad)) + Math.Abs(h * Math.Sin(rad));
-                double h2 = Math.Abs(w * Math.Sin(rad)) + Math.Abs(h * Math.Cos(rad));
+                // Рамка просто повторює розмір зображення
+                SelectionRect.Width = w;
+                SelectionRect.Height = h;
 
-                SelectionRect.Width = w2;
-                SelectionRect.Height = h2;
+                // Позиціонуємо рамку на позиції зображення
+                Canvas.SetLeft(SelectionRect, layer.X);
+                Canvas.SetTop(SelectionRect, layer.Y);
 
-                double centerX = layer.X + w / 2.0;
-                double centerY = layer.Y + h / 2.0;
-
-                Canvas.SetLeft(SelectionRect, centerX - w2 / 2.0);
-                Canvas.SetTop(SelectionRect, centerY - h2 / 2.0);
-
-                SelRotate.Angle = angle;
-                SelRotate.CenterX = w2 / 2.0;
-                SelRotate.CenterY = h2 / 2.0;
+                // Обертаємо рамку на той самий кут
+                SelRotate.Angle = layer.Angle;
+                SelRotate.CenterX = w / 2.0;
+                SelRotate.CenterY = h / 2.0;
             }
             catch (Exception ex)
             {
