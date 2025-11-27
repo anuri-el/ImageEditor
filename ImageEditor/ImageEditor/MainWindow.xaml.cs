@@ -54,8 +54,9 @@ namespace ImageEditor
             if (ViewModel.IsCropMode || ViewModel.IsResizeMode) return;
 
             Point click = e.GetPosition(EditorCanvas);
+            bool hitLayer = false;
 
-            // Перевіряємо чи клікнули на шар
+            // Перевіряємо чи клікнули на шар (від верхнього до нижнього)
             for (int i = ViewModel.Layers.Count - 1; i >= 0; i--)
             {
                 var layer = ViewModel.Layers[i];
@@ -84,6 +85,8 @@ namespace ImageEditor
 
                 if (isInside)
                 {
+                    hitLayer = true;
+
                     // Вибираємо шар
                     ViewModel.SelectLayerCommand.Execute(layer);
                     UpdateSelectionRect();
@@ -114,8 +117,12 @@ namespace ImageEditor
             }
 
             // Якщо не потрапили ні в один шар - знімаємо виділення
-            ViewModel.SelectedLayer = null;
-            SelectionRect.Visibility = Visibility.Collapsed;
+            // НЕ обертаємо колаж при кліку на пустому місці
+            if (!hitLayer)
+            {
+                ViewModel.SelectedLayer = null;
+                SelectionRect.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void ShowLayerContextMenu(Point position)
@@ -711,6 +718,12 @@ namespace ImageEditor
                 {
                     ViewModel.DeleteLayerCommand.Execute(null);
                 }
+                e.Handled = true;
+            }
+            // Ctrl+U для undo ефекту
+            else if (e.Key == Key.U && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                ViewModel.UndoEffect();
                 e.Handled = true;
             }
         }

@@ -1,4 +1,5 @@
 ﻿using ImageEditor.Commands;
+using ImageEditor.Effects;
 using ImageEditor.Models;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
@@ -226,6 +227,13 @@ namespace ImageEditor.ViewModels
         public RelayCommand SendLayerToBackCommand { get; }
         public RelayCommand DeleteLayerCommand { get; }
 
+        public ObservableCollection<EffectInfo> AvailableEffects { get; set; }
+        public RelayCommand ApplyEffectCommand { get; }
+
+        private IEffectCommand _currentEffectCommand;
+        private Stack<IEffectCommand> _effectHistory = new Stack<IEffectCommand>();
+        public RelayCommand UndoEffectCommand { get; }
+
         public MainViewModel()
         {
             AddImageCommand = new RelayCommand(AddImage);
@@ -252,6 +260,10 @@ namespace ImageEditor.ViewModels
 
             CropRatios = new ObservableCollection<CropRatio>(CropRatio.GetPredefinedRatios());
             SelectedCropRatio = CropRatios[0];
+
+            AvailableEffects = new ObservableCollection<EffectInfo>(EffectFactory.GetAvailableEffects());
+            ApplyEffectCommand = new RelayCommand(ApplyEffect, CanApplyEffect);
+            UndoEffectCommand = new RelayCommand(o => UndoEffect(), o => _effectHistory.Count > 0);
         }
 
         private void AddImage()
@@ -481,8 +493,8 @@ namespace ImageEditor.ViewModels
             {
                 // Обертаємо весь колаж як одне ціле
                 RotateCollage(angle);
-                // Після повороту на 90° слайдер скидаємо
-                SliderAngle = 0;
+                // Зберігаємо слайдер незмінним для колажу
+                // (або можна скинути до 0, якщо хочете)
             }
 
             RotationChanged?.Invoke();
@@ -493,6 +505,7 @@ namespace ImageEditor.ViewModels
         {
             if (Layers.Count == 0) return;
 
+            // Знаходимо центр колажу
             double minX = double.MaxValue, minY = double.MaxValue;
             double maxX = double.MinValue, maxY = double.MinValue;
 
@@ -535,13 +548,13 @@ namespace ImageEditor.ViewModels
                 layer.X = newCenterX - layer.Image.PixelWidth / 2.0;
                 layer.Y = newCenterY - layer.Image.PixelHeight / 2.0;
 
-                layer.Angle = (layer.Angle + angleDelta) % 360;
+                layer.Angle = NormalizeAngle(layer.Angle + angleDelta);
             }
         }
 
         private void ApplySliderRotation(double delta)
         {
-            if (Math.Abs(delta) < 0.5) return; // Ігноруємо дуже малі зміни
+            if (Math.Abs(delta) < 0.5) return;
 
             if (IsCropMode)
             {
@@ -554,10 +567,12 @@ namespace ImageEditor.ViewModels
 
             if (SelectedLayer != null)
             {
+                // Обертаємо тільки вибраний шар
                 SelectedLayer.Angle = NormalizeAngle(SelectedLayer.Angle + delta);
             }
             else if (Layers.Count > 0)
             {
+                // Обертаємо весь колаж
                 RotateCollage((int)Math.Round(delta));
             }
 
@@ -1140,7 +1155,72 @@ namespace ImageEditor.ViewModels
             }
 
             RotationChanged?.Invoke();
-            System.Windows.Input.CommandManager.InvalidateRequerySuggested();
+            CommandManager.InvalidateRequerySuggested();
+        }
+        private bool CanApplyEffect(object parameter)
+        {
+            return (SelectedLayer != null && SelectedLayer.Image != null) || Layers.Count > 0;
+        }
+
+        private void ApplyEffect(object parameter)
+        {
+            if (parameter is not EffectInfo effectInfo) return;
+
+            try
+            {
+                var effect = EffectFactory.CreateEffect(effectInfo.Type);
+                if (effect == null) return;
+
+                _currentEffectCommand = new ApplyEffectCommand(Layers, SelectedLayer, effect);
+
+                if (_currentEffectCommand.CanExecute())
+                {
+                    _currentEffectCommand.Execute();
+                    _effectHistory.Push(_currentEffectCommand);
+
+                    // Оновлюємо UI
+                    if (SelectedLayer != null)
+                    {
+                        SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
+                    }
+                    else
+                    {
+                        foreach (var layer in Layers)
+                        {
+                            layer.OnPropertyChanged(nameof(layer.Image));
+                        }
+                    }
+
+                    RotationChanged?.Invoke();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Помилка застосування ефекту: {ex.Message}");
+            }
+        }
+
+        public void UndoEffect()
+        {
+            if (_effectHistory.Count > 0)
+            {
+                var command = _effectHistory.Pop();
+                command.Undo();
+
+                if (SelectedLayer != null)
+                {
+                    SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
+                }
+                else
+                {
+                    foreach (var layer in Layers)
+                    {
+                        layer.OnPropertyChanged(nameof(layer.Image));
+                    }
+                }
+
+                RotationChanged?.Invoke();
+            }
         }
     }
 }

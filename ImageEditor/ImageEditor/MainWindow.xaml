@@ -312,6 +312,64 @@
                             </StackPanel>
                         </Expander>
 
+                        <!-- Секція Effects -->
+                        <Expander Header="🎨 Ефекти" 
+                                  IsExpanded="False"
+                                  Foreground="White"
+                                  Background="#333337"
+                                  Margin="0,0,0,10">
+                            <StackPanel Margin="10">
+                                <TextBlock Text="Виберіть ефект:" 
+                                           Foreground="White"
+                                           FontSize="11"
+                                           Margin="0,0,0,5"/>
+
+                                <ListBox ItemsSource="{Binding AvailableEffects}"
+                                         Background="#2D2D30"
+                                         BorderBrush="#555"
+                                         Foreground="White"
+                                         Height="200"
+                                         Margin="0,0,0,10"
+                                         SelectionMode="Single">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="Transparent"
+                                                    Padding="5"
+                                                    Cursor="Hand">
+                                                <TextBlock Text="{Binding DisplayName}"
+                                                           Foreground="White"/>
+                                                <Border.InputBindings>
+                                                    <MouseBinding MouseAction="LeftClick"
+                                                                    Command="{Binding DataContext.ApplyEffectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}"/>
+                                                </Border.InputBindings>
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Background" Value="#505050"/>
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+
+                                <TextBlock Text="💡 Ефект застосується до вибраного шару або всього колажу" 
+                                           Foreground="#999"
+                                           FontSize="9"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,5"/>
+
+                                <Button Content="↶ Скасувати ефект" 
+                                        Height="35"
+                                        Command="{Binding UndoEffectCommand}"
+                                        Style="{StaticResource ToolButtonStyle}"/>
+                            </StackPanel>
+                        </Expander>
+
                         <!-- Кнопка Шари -->
                         <Button Content="📚 Шари" 
                                 Height="45"
