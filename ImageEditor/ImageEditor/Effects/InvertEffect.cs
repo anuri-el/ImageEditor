@@ -33,7 +33,6 @@ namespace ImageEditor.Effects
                     pixels[i] = (byte)(255 - pixels[i]);       // B
                     pixels[i + 1] = (byte)(255 - pixels[i + 1]); // G
                     pixels[i + 2] = (byte)(255 - pixels[i + 2]); // R
-                    // Alpha залишається без змін
                 }
 
                 var bitmap = BitmapSource.Create(

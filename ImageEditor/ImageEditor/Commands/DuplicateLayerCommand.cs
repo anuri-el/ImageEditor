@@ -32,12 +32,11 @@ namespace ImageEditor.Commands
         {
             if (!CanExecute()) return;
 
-            // Створюємо дублікат шару
             _duplicatedLayer = new LayerModel
             {
-                Image = _sourceLayer.Image, // BitmapImage є frozen, тому можна використовувати той самий
-                X = _sourceLayer.X + 20, // Зміщуємо трохи вправо
-                Y = _sourceLayer.Y + 20, // і вниз
+                Image = _sourceLayer.Image,
+                X = _sourceLayer.X + 20,
+                Y = _sourceLayer.Y + 20,
                 Angle = _sourceLayer.Angle,
                 IsVisible = _sourceLayer.IsVisible,
                 OriginalWidth = _sourceLayer.OriginalWidth,

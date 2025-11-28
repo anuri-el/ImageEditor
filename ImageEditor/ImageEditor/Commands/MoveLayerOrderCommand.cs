@@ -19,7 +19,6 @@ namespace ImageEditor.Commands
             _oldIndex = layers.IndexOf(layer);
             _newIndex = newIndex;
 
-            // Опис залежить від дії
             if (_newIndex > _oldIndex)
                 Description = "Підняти шар";
             else if (_newIndex < _oldIndex)

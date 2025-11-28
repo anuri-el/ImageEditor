@@ -20,7 +20,6 @@ namespace ImageEditor.Models
             }
         }
 
-        // Додаткові властивості для binding
         public double ImageWidth => Image?.PixelWidth ?? 0;
         public double ImageHeight => Image?.PixelHeight ?? 0;
 

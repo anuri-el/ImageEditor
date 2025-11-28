@@ -33,16 +33,13 @@ namespace ImageEditor.Commands
         {
             if (!CanExecute()) return;
 
-            // Зберігаємо оригінал
             _originalImage = _layer.Image;
             _originalX = _layer.X;
             _originalY = _layer.Y;
 
             try
             {
-                // Resize зображення
                 var resizedImage = ResizeImage(_layer.Image, (int)_newWidth, (int)_newHeight);
-                // Оновлюємо зображення (позиція залишається незмінною)
                 _layer.Image = resizedImage;
             }
             catch (Exception ex)

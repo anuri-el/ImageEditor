@@ -32,7 +32,6 @@ namespace ImageEditor.Commands
 
             try
             {
-                // Зберігаємо стан всіх шарів
                 var layersToProcess = _layers.ToList();
                 foreach (var layer in layersToProcess)
                 {
@@ -41,7 +40,6 @@ namespace ImageEditor.Commands
 
                 var cropRect = new Rect(_cropArea.X, _cropArea.Y, _cropArea.Width, _cropArea.Height);
 
-                // Обрізаємо кожен шар
                 foreach (var layer in layersToProcess)
                 {
                     if (layer.Image == null) continue;
@@ -50,16 +48,13 @@ namespace ImageEditor.Commands
 
                     if (!layerRect.IntersectsWith(cropRect))
                     {
-                        // Видаляємо шари, які не перетинаються
                         _layers.Remove(layer);
                         _removedLayers.Add(layer);
                         continue;
                     }
 
-                    // Обчислюємо область перетину
                     var intersection = Rect.Intersect(layerRect, cropRect);
 
-                    // Координати crop в локальній системі шару
                     int localX = (int)Math.Max(0, intersection.X - layer.X);
                     int localY = (int)Math.Max(0, intersection.Y - layer.Y);
                     int localWidth = (int)Math.Min(intersection.Width, layer.Image.PixelWidth - localX);
@@ -74,10 +69,8 @@ namespace ImageEditor.Commands
 
                     try
                     {
-                        // Обрізаємо зображення
                         var croppedImage = CropImage(layer.Image, localX, localY, localWidth, localHeight);
 
-                        // ВАЖЛИВО: оновлюємо в правильному порядку
                         double newX = intersection.X - _cropArea.X;
                         double newY = intersection.Y - _cropArea.Y;
 
@@ -93,10 +86,8 @@ namespace ImageEditor.Commands
                     }
                 }
 
-                // Примусово оновлюємо колекцію
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
-                    // Trigger collection changed
                 }, System.Windows.Threading.DispatcherPriority.Render);
             }
             catch (Exception ex)
@@ -108,7 +99,6 @@ namespace ImageEditor.Commands
 
         public void Undo()
         {
-            // Відновлюємо всі шари
             foreach (var kvp in _mementos)
             {
                 kvp.Value.Restore(kvp.Key);

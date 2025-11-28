@@ -28,7 +28,6 @@ namespace ImageEditor.Commands
             switch (action)
             {
                 case LayerOrderAction.MoveUp:
-                    // У WPF вищий індекс = вище на екрані
                     newIndex = currentIndex + 1;
                     break;
 

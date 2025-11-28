@@ -21,9 +21,6 @@ namespace ImageEditor.Commands
         public string UndoDescription => CanUndo ? _undoStack.Peek().Description : "";
         public string RedoDescription => CanRedo ? _redoStack.Peek().Description : "";
 
-        /// <summary>
-        /// Виконує команду і додає її в історію
-        /// </summary>
         public void ExecuteCommand(IUndoableCommand command)
         {
             if (command == null || !command.CanExecute())
@@ -33,10 +30,8 @@ namespace ImageEditor.Commands
 
             _undoStack.Push(command);
 
-            // Очищаємо redo stack при новій команді
             _redoStack.Clear();
 
-            // Обмежуємо розмір історії
             if (_undoStack.Count > MaxHistorySize)
             {
                 var list = _undoStack.ToList();
@@ -51,9 +46,6 @@ namespace ImageEditor.Commands
             HistoryChanged?.Invoke();
         }
 
-        /// <summary>
-        /// Скасовує останню команду
-        /// </summary>
         public void Undo()
         {
             if (!CanUndo) return;
@@ -65,9 +57,6 @@ namespace ImageEditor.Commands
             HistoryChanged?.Invoke();
         }
 
-        /// <summary>
-        /// Повторює скасовану команду
-        /// </summary>
         public void Redo()
         {
             if (!CanRedo) return;
@@ -79,9 +68,6 @@ namespace ImageEditor.Commands
             HistoryChanged?.Invoke();
         }
 
-        /// <summary>
-        /// Очищає всю історію
-        /// </summary>
         public void Clear()
         {
             _undoStack.Clear();
@@ -89,9 +75,6 @@ namespace ImageEditor.Commands
             HistoryChanged?.Invoke();
         }
 
-        /// <summary>
-        /// Отримує список останніх дій для відображення
-        /// </summary>
         public ObservableCollection<string> GetHistoryList()
         {
             var list = new ObservableCollection<string>();

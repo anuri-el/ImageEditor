@@ -42,7 +42,6 @@ namespace ImageEditor.Commands
 
             if (_selectedLayer != null)
             {
-                // Обертаємо тільки вибраний шар
                 _originalStates[_selectedLayer] = new LayerState
                 {
                     X = _selectedLayer.X,
@@ -54,7 +53,6 @@ namespace ImageEditor.Commands
             }
             else
             {
-                // Обертаємо весь колаж
                 RotateCollage();
             }
         }
@@ -74,7 +72,6 @@ namespace ImageEditor.Commands
         {
             if (_layers.Count == 0) return;
 
-            // Зберігаємо стан всіх шарів
             foreach (var layer in _layers)
             {
                 _originalStates[layer] = new LayerState
@@ -85,7 +82,6 @@ namespace ImageEditor.Commands
                 };
             }
 
-            // Знаходимо центр колажу
             double minX = double.MaxValue, minY = double.MaxValue;
             double maxX = double.MinValue, maxY = double.MinValue;
 

@@ -43,13 +43,11 @@ namespace ImageEditor.Commands
             {
                 if (_selectedLayer != null)
                 {
-                    // Застосовуємо до вибраного шару
                     _originalImages[_selectedLayer] = _selectedLayer.Image;
                     _selectedLayer.Image = _effect.Apply(_selectedLayer.Image);
                 }
                 else
                 {
-                    // Застосовуємо до всіх шарів
                     foreach (var layer in _layers)
                     {
                         if (layer.Image == null) continue;

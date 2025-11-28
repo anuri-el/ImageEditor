@@ -90,7 +90,6 @@ namespace ImageEditor.ViewModels
             }
         }
 
-        // Crop properties
         private bool _isCropMode;
         public bool IsCropMode
         {
@@ -165,17 +164,14 @@ namespace ImageEditor.ViewModels
             {
                 if (_isResizeMode == value) return;
 
-                // Спочатку оновлюємо значення
                 _isResizeMode = value;
                 OnPropertyChanged();
 
-                // Потім скасовуємо, якщо потрібно
                 if (!value)
                 {
                     CancelResize();
                 }
 
-                // Вимикаємо crop mode при включенні resize
                 if (value && IsCropMode)
                 {
                     IsCropMode = false;
@@ -373,7 +369,6 @@ namespace ImageEditor.ViewModels
 
             try
             {
-                // Знаходимо bounds всіх зображень з урахуванням обертання
                 double minX = double.MaxValue, minY = double.MaxValue;
                 double maxX = double.MinValue, maxY = double.MinValue;
 
@@ -381,7 +376,6 @@ namespace ImageEditor.ViewModels
                 {
                     if (layer.Image == null) continue;
 
-                    // Отримуємо bounds повернутого зображення
                     double w = layer.Image.PixelWidth;
                     double h = layer.Image.PixelHeight;
                     double angle = layer.Angle;
@@ -416,7 +410,6 @@ namespace ImageEditor.ViewModels
                     return;
                 }
 
-                // Створюємо RenderTargetBitmap
                 RenderTargetBitmap rtb = new RenderTargetBitmap(
                     (int)Math.Ceiling(finalWidth),
                     (int)Math.Ceiling(finalHeight),
@@ -426,7 +419,6 @@ namespace ImageEditor.ViewModels
                 DrawingVisual dv = new DrawingVisual();
                 using (DrawingContext ctx = dv.RenderOpen())
                 {
-                    // Малюємо тільки зображення, без рамок
                     foreach (var layer in Layers)
                     {
                         if (layer.Image == null) continue;
@@ -444,14 +436,13 @@ namespace ImageEditor.ViewModels
                                 layer.Image.PixelWidth,
                                 layer.Image.PixelHeight));
 
-                        ctx.Pop(); // RotateTransform
-                        ctx.Pop(); // TranslateTransform
+                        ctx.Pop();
+                        ctx.Pop();
                     }
                 }
 
                 rtb.Render(dv);
 
-                // Вибираємо encoder
                 BitmapEncoder encoder;
                 string ext = System.IO.Path.GetExtension(dlg.FileName).ToLower();
 
@@ -505,57 +496,6 @@ namespace ImageEditor.ViewModels
             CommandManager.InvalidateRequerySuggested();
         }
 
-        private void RotateCollage(int angleDelta)
-        {
-            if (Layers.Count == 0) return;
-
-            // Знаходимо центр колажу
-            double minX = double.MaxValue, minY = double.MaxValue;
-            double maxX = double.MinValue, maxY = double.MinValue;
-
-            foreach (var layer in Layers)
-            {
-                if (layer.Image == null) continue;
-
-                double centerX = layer.X + layer.Image.PixelWidth / 2.0;
-                double centerY = layer.Y + layer.Image.PixelHeight / 2.0;
-
-                if (centerX < minX) minX = centerX;
-                if (centerX > maxX) maxX = centerX;
-                if (centerY < minY) minY = centerY;
-                if (centerY > maxY) maxY = centerY;
-            }
-
-            double collageCenterX = (minX + maxX) / 2.0;
-            double collageCenterY = (minY + maxY) / 2.0;
-
-            double angleRad = angleDelta * Math.PI / 180.0;
-            double cos = Math.Cos(angleRad);
-            double sin = Math.Sin(angleRad);
-
-            foreach (var layer in Layers)
-            {
-                if (layer.Image == null) continue;
-
-                double layerCenterX = layer.X + layer.Image.PixelWidth / 2.0;
-                double layerCenterY = layer.Y + layer.Image.PixelHeight / 2.0;
-
-                double dx = layerCenterX - collageCenterX;
-                double dy = layerCenterY - collageCenterY;
-
-                double newDx = dx * cos - dy * sin;
-                double newDy = dx * sin + dy * cos;
-
-                double newCenterX = collageCenterX + newDx;
-                double newCenterY = collageCenterY + newDy;
-
-                layer.X = newCenterX - layer.Image.PixelWidth / 2.0;
-                layer.Y = newCenterY - layer.Image.PixelHeight / 2.0;
-
-                layer.Angle = NormalizeAngle(layer.Angle + angleDelta);
-            }
-        }
-
         private void ApplySliderRotation(double delta)
         {
             if (Math.Abs(delta) < 0.5) return;
@@ -571,31 +511,18 @@ namespace ImageEditor.ViewModels
 
         private double GetCurrentSliderAngle(int angle)
         {
-            // Нормалізуємо кут до діапазону 0-360
             int normalized = ((angle % 360) + 360) % 360;
 
-            // Знаходимо найближчий базовий кут (0, 90, 180, 270)
             int nearestBase = (int)(Math.Round(normalized / 90.0) * 90) % 360;
 
-            // Різниця від базового кута
             int diff = normalized - nearestBase;
 
-            // Коригуємо якщо більше 180
             if (diff > 180) diff -= 360;
             if (diff < -180) diff += 360;
 
-            // Обмежуємо діапазоном -45...45 і округлюємо
             return Math.Round(Math.Max(-45, Math.Min(45, (double)diff)));
         }
 
-        private int NormalizeAngle(double angle)
-        {
-            int result = ((int)Math.Round(angle) % 360);
-            if (result < 0) result += 360;
-            return result;
-        }
-
-        // Crop methods
         private void StartCrop()
         {
             if (IsResizeMode)
@@ -605,10 +532,8 @@ namespace ImageEditor.ViewModels
 
             IsCropMode = true;
 
-            // Ініціалізуємо crop область
             if (SelectedLayer != null && SelectedLayer.Image != null)
             {
-                // Crop для вибраного шару
                 CropArea = new CropArea
                 {
                     X = SelectedLayer.X + SelectedLayer.Image.PixelWidth * 0.1,
@@ -619,7 +544,6 @@ namespace ImageEditor.ViewModels
             }
             else if (Layers.Count > 0)
             {
-                // Crop для всього колажу
                 double minX = Layers.Min(l => l.X);
                 double minY = Layers.Min(l => l.Y);
                 double maxX = Layers.Max(l => l.X + l.Image.PixelWidth);
@@ -674,7 +598,6 @@ namespace ImageEditor.ViewModels
 
                 _commandHistory.ExecuteCommand(cropCommand);
 
-                // Оновлюємо UI
                 if (SelectedLayer != null)
                 {
                     SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
@@ -712,7 +635,6 @@ namespace ImageEditor.ViewModels
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                // Знаходимо bounds обрізаного колажу
                 double minX = double.MaxValue, minY = double.MaxValue;
                 double maxX = double.MinValue, maxY = double.MinValue;
 
@@ -732,11 +654,9 @@ namespace ImageEditor.ViewModels
 
                 if (minX == double.MaxValue) return;
 
-                // Розміри колажу
                 double collageWidth = maxX - minX;
                 double collageHeight = maxY - minY;
 
-                // Центруємо на існуючому canvas (не змінюючи його розмір)
                 double centerX = CanvasWidth / 2.0;
                 double centerY = CanvasHeight / 2.0;
 
@@ -746,7 +666,6 @@ namespace ImageEditor.ViewModels
                 double offsetX = centerX - collageCenterX;
                 double offsetY = centerY - collageCenterY;
 
-                // Застосовуємо зміщення до всіх шарів
                 foreach (var layer in Layers)
                 {
                     layer.X += offsetX;
@@ -792,16 +711,13 @@ namespace ImageEditor.ViewModels
         {
             try
             {
-                // Вимикаємо crop mode
                 if (IsCropMode)
                 {
                     IsCropMode = false;
                 }
 
-                // Ініціалізуємо resize область
                 if (SelectedLayer != null && SelectedLayer.Image != null)
                 {
-                    // Resize для вибраного шару
                     ResizeArea = new ResizeArea
                     {
                         X = SelectedLayer.X,
@@ -814,7 +730,6 @@ namespace ImageEditor.ViewModels
                 }
                 else if (Layers.Count > 0)
                 {
-                    // Resize для всього колажу
                     double minX = double.MaxValue, minY = double.MaxValue;
                     double maxX = double.MinValue, maxY = double.MinValue;
 
@@ -854,10 +769,8 @@ namespace ImageEditor.ViewModels
                     return;
                 }
 
-                // ВАЖЛИВО: спочатку встановлюємо режим, потім викликаємо подію
                 IsResizeMode = true;
 
-                // Відкладаємо виклик події, щоб UI встиг оновитись
                 Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     ResizeModeChanged?.Invoke();
@@ -892,7 +805,6 @@ namespace ImageEditor.ViewModels
 
                 if (SelectedLayer != null)
                 {
-                    // Resize одного шару
                     resizeCommand = new ResizeImageCommand(
                         SelectedLayer,
                         ResizeArea.Width,
@@ -900,7 +812,6 @@ namespace ImageEditor.ViewModels
                 }
                 else if (Layers.Count > 0)
                 {
-                    // Resize всього колажу
                     if (ResizeArea.OriginalWidth <= 0 || ResizeArea.OriginalHeight <= 0)
                     {
                         MessageBox.Show("Некоректні оригінальні розміри.");
@@ -926,7 +837,6 @@ namespace ImageEditor.ViewModels
 
                 _commandHistory.ExecuteCommand(resizeCommand);
 
-                // Оновлюємо UI
                 if (SelectedLayer != null)
                 {
                     SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
@@ -964,7 +874,6 @@ namespace ImageEditor.ViewModels
             {
                 ResizeArea = null;
 
-                // Не викликаємо IsResizeMode = false тут, щоб уникнути рекурсії
                 if (_isResizeMode)
                 {
                     _isResizeMode = false;
@@ -1144,7 +1053,6 @@ namespace ImageEditor.ViewModels
                 var effectCommand = new ApplyEffectCommand(Layers, SelectedLayer, effect);
                 _commandHistory.ExecuteCommand(effectCommand);
 
-                // Оновлюємо UI
                 if (SelectedLayer != null)
                 {
                     SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
@@ -1184,7 +1092,6 @@ namespace ImageEditor.ViewModels
         {
             _commandHistory.Undo();
 
-            // Оновлюємо UI
             if (SelectedLayer != null)
             {
                 SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
@@ -1208,7 +1115,6 @@ namespace ImageEditor.ViewModels
         {
             _commandHistory.Redo();
 
-            // Оновлюємо UI
             if (SelectedLayer != null)
             {
                 SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));

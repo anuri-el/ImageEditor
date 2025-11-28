@@ -34,7 +34,6 @@ namespace ImageEditor.Effects
                     byte g = pixels[i + 1];
                     byte r = pixels[i + 2];
 
-                    // Sepia formula
                     int tr = (int)(0.393 * r + 0.769 * g + 0.189 * b);
                     int tg = (int)(0.349 * r + 0.686 * g + 0.168 * b);
                     int tb = (int)(0.272 * r + 0.534 * g + 0.131 * b);

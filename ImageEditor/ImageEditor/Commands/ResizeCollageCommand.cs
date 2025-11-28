@@ -34,13 +34,11 @@ namespace ImageEditor.Commands
 
             try
             {
-                // Зберігаємо стан
                 foreach (var layer in _layers)
                 {
                     _mementos[layer] = new LayerMemento(layer);
                 }
 
-                // Resize кожен шар
                 foreach (var layer in _layers)
                 {
                     if (layer.Image == null) continue;
@@ -52,7 +50,6 @@ namespace ImageEditor.Commands
 
                     var resizedImage = ResizeImage(layer.Image, newWidth, newHeight);
 
-                    // Масштабуємо позицію
                     layer.X *= _scaleX;
                     layer.Y *= _scaleY;
                     layer.Image = resizedImage;

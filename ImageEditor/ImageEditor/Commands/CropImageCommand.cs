@@ -30,18 +30,15 @@ namespace ImageEditor.Commands
         {
             if (!CanExecute()) return;
 
-            // Зберігаємо оригінал для Undo
             _originalImage = _layer.Image;
             _originalX = _layer.X;
             _originalY = _layer.Y;
 
             try
             {
-                // Обчислюємо область crop в координатах шару
                 double cropLocalX = _cropArea.X - _layer.X;
                 double cropLocalY = _cropArea.Y - _layer.Y;
 
-                // Перевіряємо межі
                 cropLocalX = Math.Max(0, cropLocalX);
                 cropLocalY = Math.Max(0, cropLocalY);
 
@@ -54,14 +51,12 @@ namespace ImageEditor.Commands
                     return;
                 }
 
-                // Виконуємо crop
                 var croppedImage = CropImage(_layer.Image,
                     (int)cropLocalX,
                     (int)cropLocalY,
                     (int)maxWidth,
                     (int)maxHeight);
 
-                // ВАЖЛИВО: спочатку оновлюємо позицію, потім зображення
                 _layer.X = _cropArea.X;
                 _layer.Y = _cropArea.Y;
                 _layer.Image = croppedImage;
