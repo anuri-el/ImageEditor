@@ -3,12 +3,14 @@ using System.Collections.ObjectModel;
 
 namespace ImageEditor.Commands
 {
-    public class MoveLayerOrderCommand : ILayerOrderCommand
+    public class MoveLayerOrderCommand : ILayerOrderCommand, IUndoableCommand
     {
         private readonly ObservableCollection<LayerModel> _layers;
         private readonly LayerModel _layer;
         private readonly int _oldIndex;
         private readonly int _newIndex;
+
+        public string Description { get; }
 
         public MoveLayerOrderCommand(ObservableCollection<LayerModel> layers, LayerModel layer, int newIndex)
         {
@@ -16,6 +18,14 @@ namespace ImageEditor.Commands
             _layer = layer;
             _oldIndex = layers.IndexOf(layer);
             _newIndex = newIndex;
+
+            // Опис залежить від дії
+            if (_newIndex > _oldIndex)
+                Description = "Підняти шар";
+            else if (_newIndex < _oldIndex)
+                Description = "Опустити шар";
+            else
+                Description = "Зміна порядку шарів";
         }
 
         public bool CanExecute()

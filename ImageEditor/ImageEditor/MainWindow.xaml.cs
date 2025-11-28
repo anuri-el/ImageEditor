@@ -669,8 +669,25 @@ namespace ImageEditor
             // Ctrl+Z для undo переміщення
             if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control)
             {
-                ViewModel.UndoLastMove();
+                ViewModel.Undo();
                 UpdateSelectionRect();
+                e.Handled = true;
+            }
+            // Ctrl+Y або Ctrl+Shift+Z для redo
+            else if ((e.Key == Key.Y && Keyboard.Modifiers == ModifierKeys.Control) ||
+                     (e.Key == Key.Z && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift)))
+            {
+                ViewModel.Redo();
+                UpdateSelectionRect();
+                e.Handled = true;
+            }
+            // Ctrl+D для дублювання
+            else if (e.Key == Key.D && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (ViewModel.DuplicateLayerCommand.CanExecute(null))
+                {
+                    ViewModel.DuplicateLayerCommand.Execute(null);
+                }
                 e.Handled = true;
             }
             // Ctrl+] - вгору
@@ -718,12 +735,6 @@ namespace ImageEditor
                 {
                     ViewModel.DeleteLayerCommand.Execute(null);
                 }
-                e.Handled = true;
-            }
-            // Ctrl+U для undo ефекту
-            else if (e.Key == Key.U && Keyboard.Modifiers == ModifierKeys.Control)
-            {
-                ViewModel.UndoEffect();
                 e.Handled = true;
             }
         }
@@ -786,6 +797,14 @@ namespace ImageEditor
             if (ViewModel.DeleteLayerCommand.CanExecute(null))
             {
                 ViewModel.DeleteLayerCommand.Execute(null);
+            }
+        }
+
+        private void DuplicateLayer_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel.DuplicateLayerCommand.CanExecute(null))
+            {
+                ViewModel.DuplicateLayerCommand.Execute(null);
             }
         }
     }

@@ -6,12 +6,14 @@ using System.Windows.Media.Imaging;
 
 namespace ImageEditor.Commands
 {
-    public class CropCollageCommand : ICropCommand
+    public class CropCollageCommand : ICropCommand, IUndoableCommand
     {
         private readonly ObservableCollection<LayerModel> _layers;
         private readonly CropArea _cropArea;
         private readonly Dictionary<LayerModel, LayerMemento> _mementos = new Dictionary<LayerModel, LayerMemento>();
         private readonly List<LayerModel> _removedLayers = new List<LayerModel>();
+
+        public string Description => "Обрізання колажу";
 
         public CropCollageCommand(ObservableCollection<LayerModel> layers, CropArea cropArea)
         {
@@ -81,7 +83,7 @@ namespace ImageEditor.Commands
 
                         layer.X = newX;
                         layer.Y = newY;
-                        layer.Image = croppedImage; // OnPropertyChanged викликається автоматично
+                        layer.Image = croppedImage;
                     }
                     catch (Exception ex)
                     {

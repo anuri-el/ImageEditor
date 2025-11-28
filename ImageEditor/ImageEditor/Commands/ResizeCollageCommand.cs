@@ -7,12 +7,14 @@ using System.Windows.Media.Imaging;
 
 namespace ImageEditor.Commands
 {
-    public class ResizeCollageCommand : IResizeCommand
+    public class ResizeCollageCommand : IResizeCommand, IUndoableCommand
     {
         private readonly ObservableCollection<LayerModel> _layers;
         private readonly double _scaleX;
         private readonly double _scaleY;
         private readonly Dictionary<LayerModel, LayerMemento> _mementos = new Dictionary<LayerModel, LayerMemento>();
+
+        public string Description => "Зміна розміру колажу";
 
         public ResizeCollageCommand(ObservableCollection<LayerModel> layers, double scaleX, double scaleY)
         {

@@ -2,13 +2,15 @@
 
 namespace ImageEditor.Commands
 {
-    public class MoveLayerCommand : IMoveCommand
+    public class MoveLayerCommand : IMoveCommand, IUndoableCommand
     {
         private readonly LayerModel _layer;
         private readonly double _newX;
         private readonly double _newY;
         private double _originalX;
         private double _originalY;
+
+        public string Description => "Переміщення шару";
 
         public MoveLayerCommand(LayerModel layer, double newX, double newY)
         {

@@ -10,12 +10,14 @@ using System.Windows.Media.Imaging;
 
 namespace ImageEditor.Commands
 {
-    public class ApplyEffectCommand : IEffectCommand
+    public class ApplyEffectCommand : IEffectCommand, IUndoableCommand
     {
         private readonly ObservableCollection<LayerModel> _layers;
         private readonly LayerModel _selectedLayer;
         private readonly IImageEffect _effect;
         private readonly Dictionary<LayerModel, BitmapImage> _originalImages = new();
+
+        public string Description => $"Застосування ефекту: {_effect.Name}";
 
         public ApplyEffectCommand(
             ObservableCollection<LayerModel> layers,

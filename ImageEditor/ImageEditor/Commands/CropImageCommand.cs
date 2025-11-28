@@ -5,13 +5,15 @@ using System.Windows.Media.Imaging;
 
 namespace ImageEditor.Commands
 {
-    public class CropImageCommand : ICropCommand
+    public class CropImageCommand : ICropCommand, IUndoableCommand
     {
         private readonly LayerModel _layer;
         private readonly CropArea _cropArea;
         private BitmapImage _originalImage;
         private double _originalX;
         private double _originalY;
+
+        public string Description => "Обрізання зображення";
 
         public CropImageCommand(LayerModel layer, CropArea cropArea)
         {
@@ -62,7 +64,7 @@ namespace ImageEditor.Commands
                 // ВАЖЛИВО: спочатку оновлюємо позицію, потім зображення
                 _layer.X = _cropArea.X;
                 _layer.Y = _cropArea.Y;
-                _layer.Image = croppedImage; // Це викличе OnPropertyChanged
+                _layer.Image = croppedImage;
             }
             catch (Exception ex)
             {
@@ -84,11 +86,9 @@ namespace ImageEditor.Commands
         {
             try
             {
-                // Створюємо CroppedBitmap
                 var croppedBitmap = new CroppedBitmap(source,
                     new Int32Rect(x, y, width, height));
 
-                // Конвертуємо в BitmapImage через MemoryStream
                 var encoder = new PngBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(croppedBitmap));
 
@@ -102,7 +102,7 @@ namespace ImageEditor.Commands
                     result.CacheOption = BitmapCacheOption.OnLoad;
                     result.StreamSource = stream;
                     result.EndInit();
-                    result.Freeze(); // ВАЖЛИВО для багатопоточності
+                    result.Freeze();
 
                     return result;
                 }

@@ -19,22 +19,26 @@
         <!-- Context Menu для шарів -->
         <ContextMenu x:Key="LayerContextMenu">
             <MenuItem Header="↑ Вгору" 
-              Click="MoveLayerUp_Click"
-              InputGestureText="Ctrl+]"/>
+                      Click="MoveLayerUp_Click"
+                      InputGestureText="Ctrl+]"/>
             <MenuItem Header="↓ Вниз" 
-              Click="MoveLayerDown_Click"
-              InputGestureText="Ctrl+["/>
+                      Click="MoveLayerDown_Click"
+                      InputGestureText="Ctrl+["/>
             <Separator/>
             <MenuItem Header="⬆ Перемістити наверх" 
-              Click="BringLayerToFront_Click"
-              InputGestureText="Ctrl+Shift+]"/>
+                      Click="BringLayerToFront_Click"
+                      InputGestureText="Ctrl+Shift+]"/>
             <MenuItem Header="⬇ Перемістити вниз" 
-              Click="SendLayerToBack_Click"
-              InputGestureText="Ctrl+Shift+["/>
+                      Click="SendLayerToBack_Click"
+                      InputGestureText="Ctrl+Shift+["/>
             <Separator/>
             <MenuItem Header="❌ Видалити шар" 
-              Click="DeleteLayer_Click"
-              InputGestureText="Delete"/>
+                      Click="DeleteLayer_Click"
+                      InputGestureText="Delete"/>
+            <Separator/>
+            <MenuItem Header="📋 Дублювати шар" 
+                      Click="DuplicateLayer_Click"
+                      InputGestureText="Ctrl+D"/>
         </ContextMenu>
     </Window.Resources>
 
@@ -67,6 +71,24 @@
                         Margin="0,0,10,0"
                         FontSize="14"
                         Command="{Binding SaveCommand}"
+                        Style="{StaticResource TopBarButtonStyle}"/>
+
+                <Button Content="↶ Undo" 
+                        Width="100" 
+                        Height="35"
+                        Margin="0,0,5,0"
+                        FontSize="14"
+                        Command="{Binding UndoCommand}"
+                        ToolTip="{Binding UndoDescription}"
+                        Style="{StaticResource TopBarButtonStyle}"/>
+
+                <Button Content="↷ Redo" 
+                        Width="100" 
+                        Height="35"
+                        Margin="0,0,10,0"
+                        FontSize="14"
+                        Command="{Binding RedoCommand}"
+                        ToolTip="{Binding RedoDescription}"
                         Style="{StaticResource TopBarButtonStyle}"/>
             </StackPanel>
         </Border>
@@ -735,11 +757,18 @@
                                                     ToolTip="Вгору"
                                                     Style="{StaticResource LayerButtonStyle}"/>
                                             <Button Content="▼" 
-                                                Width="28" Height="25"
-                                                FontSize="10"
-                                                Command="{Binding DataContext.MoveLayerDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                ToolTip="Вниз"
-                                                Style="{StaticResource LayerButtonStyle}"/>
+                                                    Width="28" Height="25"
+                                                    FontSize="10"
+                                                    Command="{Binding DataContext.MoveLayerDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    ToolTip="Вниз"
+                                                    Style="{StaticResource LayerButtonStyle}"/>
+                                            <Button Content="📋" 
+                                                    Width="28" Height="25"
+                                                    Margin="0,2,0,0"
+                                                    FontSize="10"
+                                                    Command="{Binding DataContext.DuplicateLayerCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    ToolTip="Дублювати"
+                                                    Style="{StaticResource LayerButtonStyle}"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>

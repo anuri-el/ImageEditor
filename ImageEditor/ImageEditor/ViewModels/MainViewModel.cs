@@ -216,10 +216,7 @@ namespace ImageEditor.ViewModels
         private IResizeCommand _currentResizeCommand;
         private IMoveCommand _currentMoveCommand;
 
-        private Stack<IMoveCommand> _moveHistory = new Stack<IMoveCommand>();
-
         private ILayerOrderCommand _currentLayerOrderCommand;
-        private Stack<ILayerOrderCommand> _layerOrderHistory = new Stack<ILayerOrderCommand>();
 
         public RelayCommand MoveLayerUpCommand { get; }
         public RelayCommand MoveLayerDownCommand { get; }
@@ -231,8 +228,17 @@ namespace ImageEditor.ViewModels
         public RelayCommand ApplyEffectCommand { get; }
 
         private IEffectCommand _currentEffectCommand;
-        private Stack<IEffectCommand> _effectHistory = new Stack<IEffectCommand>();
+        private CommandHistory _commandHistory = new CommandHistory();
+
         public RelayCommand UndoEffectCommand { get; }
+        public bool CanUndo => _commandHistory.CanUndo;
+        public bool CanRedo => _commandHistory.CanRedo;
+        public string UndoDescription => _commandHistory.UndoDescription;
+        public string RedoDescription => _commandHistory.RedoDescription;
+
+        public RelayCommand UndoCommand { get; }
+        public RelayCommand RedoCommand { get; }
+        public RelayCommand DuplicateLayerCommand { get; }
 
         public MainViewModel()
         {
@@ -263,7 +269,18 @@ namespace ImageEditor.ViewModels
 
             AvailableEffects = new ObservableCollection<EffectInfo>(EffectFactory.GetAvailableEffects());
             ApplyEffectCommand = new RelayCommand(ApplyEffect, CanApplyEffect);
-            UndoEffectCommand = new RelayCommand(o => UndoEffect(), o => _effectHistory.Count > 0);
+            UndoCommand = new RelayCommand(o => Undo(), o => CanUndo);
+            RedoCommand = new RelayCommand(o => Redo(), o => CanRedo);
+            DuplicateLayerCommand = new RelayCommand(DuplicateLayer, CanDuplicateLayer);
+
+            _commandHistory.HistoryChanged += () =>
+            {
+                OnPropertyChanged(nameof(CanUndo));
+                OnPropertyChanged(nameof(CanRedo));
+                OnPropertyChanged(nameof(UndoDescription));
+                OnPropertyChanged(nameof(RedoDescription));
+                CommandManager.InvalidateRequerySuggested();
+            };
         }
 
         private void AddImage()
@@ -473,32 +490,19 @@ namespace ImageEditor.ViewModels
 
         private void Rotate(int angle)
         {
-            if (IsCropMode)
-            {
-                IsCropMode = false;
-            }
-            if (IsResizeMode)
-            {
-                IsResizeMode = false;
-            }
+            if (IsCropMode) IsCropMode = false;
+            if (IsResizeMode) IsResizeMode = false;
+
+            var command = new RotateCommand(Layers, SelectedLayer, angle);
+            _commandHistory.ExecuteCommand(command);
 
             if (SelectedLayer != null)
             {
-                // Обертаємо тільки вибраний шар
-                SelectedLayer.Angle = NormalizeAngle(SelectedLayer.Angle + angle);
-                // Оновлюємо слайдер до найближчого значення в діапазоні
                 SliderAngle = GetCurrentSliderAngle(SelectedLayer.Angle);
-            }
-            else if (Layers.Count > 0)
-            {
-                // Обертаємо весь колаж як одне ціле
-                RotateCollage(angle);
-                // Зберігаємо слайдер незмінним для колажу
-                // (або можна скинути до 0, якщо хочете)
             }
 
             RotationChanged?.Invoke();
-            System.Windows.Input.CommandManager.InvalidateRequerySuggested();
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private void RotateCollage(int angleDelta)
@@ -556,25 +560,11 @@ namespace ImageEditor.ViewModels
         {
             if (Math.Abs(delta) < 0.5) return;
 
-            if (IsCropMode)
-            {
-                IsCropMode = false;
-            }
-            if (IsResizeMode)
-            {
-                IsResizeMode = false;
-            }
+            if (IsCropMode) IsCropMode = false;
+            if (IsResizeMode) IsResizeMode = false;
 
-            if (SelectedLayer != null)
-            {
-                // Обертаємо тільки вибраний шар
-                SelectedLayer.Angle = NormalizeAngle(SelectedLayer.Angle + delta);
-            }
-            else if (Layers.Count > 0)
-            {
-                // Обертаємо весь колаж
-                RotateCollage((int)Math.Round(delta));
-            }
+            var command = new RotateCommand(Layers, SelectedLayer, (int)Math.Round(delta));
+            _commandHistory.ExecuteCommand(command);
 
             RotationChanged?.Invoke();
         }
@@ -661,7 +651,6 @@ namespace ImageEditor.ViewModels
 
             try
             {
-                // Застосовуємо custom ratio якщо вибрано
                 if (IsCustomRatio && CustomRatioWidth > 0 && CustomRatioHeight > 0)
                 {
                     SelectedCropRatio = new CropRatio
@@ -672,38 +661,39 @@ namespace ImageEditor.ViewModels
                     };
                 }
 
+                IUndoableCommand cropCommand;
+
                 if (SelectedLayer != null)
                 {
-                    // Crop одного шару
-                    _currentCropCommand = new CropImageCommand(SelectedLayer, CropArea);
-                    _currentCropCommand.Execute();
+                    cropCommand = new CropImageCommand(SelectedLayer, CropArea);
+                }
+                else
+                {
+                    cropCommand = new CropCollageCommand(Layers, CropArea);
+                }
 
-                    // Примусово оновлюємо UI
+                _commandHistory.ExecuteCommand(cropCommand);
+
+                // Оновлюємо UI
+                if (SelectedLayer != null)
+                {
                     SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
                     SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.X));
                     SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Y));
                 }
                 else
                 {
-                    // Crop всього колажу
-                    _currentCropCommand = new CropCollageCommand(Layers, CropArea);
-                    _currentCropCommand.Execute();
-
-                    // Примусово оновлюємо всі шари
                     foreach (var layer in Layers)
                     {
                         layer.OnPropertyChanged(nameof(layer.Image));
                         layer.OnPropertyChanged(nameof(layer.X));
                         layer.OnPropertyChanged(nameof(layer.Y));
                     }
-
-                    // Оновлюємо canvas
                     UpdateCanvasAfterCrop();
                 }
 
                 IsCropMode = false;
                 CropArea = null;
-
                 CropModeChanged?.Invoke();
                 RotationChanged?.Invoke();
             }
@@ -898,23 +888,15 @@ namespace ImageEditor.ViewModels
                     return;
                 }
 
+                IUndoableCommand resizeCommand;
+
                 if (SelectedLayer != null)
                 {
                     // Resize одного шару
-                    _currentResizeCommand = new ResizeImageCommand(
+                    resizeCommand = new ResizeImageCommand(
                         SelectedLayer,
                         ResizeArea.Width,
                         ResizeArea.Height);
-
-                    if (_currentResizeCommand.CanExecute())
-                    {
-                        _currentResizeCommand.Execute();
-
-                        // Оновлюємо UI
-                        SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
-                        SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.X));
-                        SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Y));
-                    }
                 }
                 else if (Layers.Count > 0)
                 {
@@ -935,19 +917,29 @@ namespace ImageEditor.ViewModels
                         return;
                     }
 
-                    _currentResizeCommand = new ResizeCollageCommand(Layers, scaleX, scaleY);
+                    resizeCommand = new ResizeCollageCommand(Layers, scaleX, scaleY);
+                }
+                else
+                {
+                    return;
+                }
 
-                    if (_currentResizeCommand.CanExecute())
+                _commandHistory.ExecuteCommand(resizeCommand);
+
+                // Оновлюємо UI
+                if (SelectedLayer != null)
+                {
+                    SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
+                    SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.X));
+                    SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Y));
+                }
+                else
+                {
+                    foreach (var layer in Layers)
                     {
-                        _currentResizeCommand.Execute();
-
-                        // Оновлюємо всі шари
-                        foreach (var layer in Layers)
-                        {
-                            layer.OnPropertyChanged(nameof(layer.Image));
-                            layer.OnPropertyChanged(nameof(layer.X));
-                            layer.OnPropertyChanged(nameof(layer.Y));
-                        }
+                        layer.OnPropertyChanged(nameof(layer.Image));
+                        layer.OnPropertyChanged(nameof(layer.X));
+                        layer.OnPropertyChanged(nameof(layer.Y));
                     }
                 }
 
@@ -999,19 +991,9 @@ namespace ImageEditor.ViewModels
 
         public void ExecuteMoveCommand(IMoveCommand command)
         {
-            if (command.CanExecute())
+            if (command is IUndoableCommand undoableCommand)
             {
-                command.Execute();
-                _moveHistory.Push(command);
-            }
-        }
-
-        public void UndoLastMove()
-        {
-            if (_moveHistory.Count > 0)
-            {
-                var command = _moveHistory.Pop();
-                command.Undo();
+                _commandHistory.ExecuteCommand(undoableCommand);
             }
         }
 
@@ -1085,28 +1067,14 @@ namespace ImageEditor.ViewModels
 
         private void ExecuteLayerOrderCommand(ILayerOrderCommand command)
         {
-            if (command != null && command.CanExecute())
+            if (command is IUndoableCommand undoableCommand)
             {
-                command.Execute();
-                _layerOrderHistory.Push(command);
-
-                // Оновлюємо UI
+                _commandHistory.ExecuteCommand(undoableCommand);
                 RotationChanged?.Invoke();
-
-                // Оновлюємо стан команд
                 CommandManager.InvalidateRequerySuggested();
             }
         }
 
-        public void UndoLayerOrder()
-        {
-            if (_layerOrderHistory.Count > 0)
-            {
-                var command = _layerOrderHistory.Pop();
-                command.Undo();
-                RotationChanged?.Invoke();
-            }
-        }
         private bool CanDeleteLayer()
         {
             return SelectedLayer != null && Layers.Contains(SelectedLayer);
@@ -1124,7 +1092,9 @@ namespace ImageEditor.ViewModels
 
             if (result == MessageBoxResult.Yes)
             {
-                Layers.Remove(SelectedLayer);
+                var command = new DeleteLayerCommand(Layers, SelectedLayer);
+                _commandHistory.ExecuteCommand(command);
+
                 SelectedLayer = null;
                 RotationChanged?.Invoke();
             }
@@ -1171,42 +1141,10 @@ namespace ImageEditor.ViewModels
                 var effect = EffectFactory.CreateEffect(effectInfo.Type);
                 if (effect == null) return;
 
-                _currentEffectCommand = new ApplyEffectCommand(Layers, SelectedLayer, effect);
+                var effectCommand = new ApplyEffectCommand(Layers, SelectedLayer, effect);
+                _commandHistory.ExecuteCommand(effectCommand);
 
-                if (_currentEffectCommand.CanExecute())
-                {
-                    _currentEffectCommand.Execute();
-                    _effectHistory.Push(_currentEffectCommand);
-
-                    // Оновлюємо UI
-                    if (SelectedLayer != null)
-                    {
-                        SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
-                    }
-                    else
-                    {
-                        foreach (var layer in Layers)
-                        {
-                            layer.OnPropertyChanged(nameof(layer.Image));
-                        }
-                    }
-
-                    RotationChanged?.Invoke();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Помилка застосування ефекту: {ex.Message}");
-            }
-        }
-
-        public void UndoEffect()
-        {
-            if (_effectHistory.Count > 0)
-            {
-                var command = _effectHistory.Pop();
-                command.Undo();
-
+                // Оновлюємо UI
                 if (SelectedLayer != null)
                 {
                     SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
@@ -1221,6 +1159,73 @@ namespace ImageEditor.ViewModels
 
                 RotationChanged?.Invoke();
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Помилка застосування ефекту: {ex.Message}");
+            }
+        }
+
+        private bool CanDuplicateLayer(object parameter)
+        {
+            return SelectedLayer != null;
+        }
+
+        private void DuplicateLayer(object parameter)
+        {
+            if (SelectedLayer == null) return;
+
+            var command = new DuplicateLayerCommand(Layers, SelectedLayer);
+            _commandHistory.ExecuteCommand(command);
+
+            RotationChanged?.Invoke();
+        }
+
+        public void Undo()
+        {
+            _commandHistory.Undo();
+
+            // Оновлюємо UI
+            if (SelectedLayer != null)
+            {
+                SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
+                SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.X));
+                SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Y));
+                SliderAngle = GetCurrentSliderAngle(SelectedLayer.Angle);
+            }
+
+            foreach (var layer in Layers)
+            {
+                layer.OnPropertyChanged(nameof(layer.Image));
+                layer.OnPropertyChanged(nameof(layer.X));
+                layer.OnPropertyChanged(nameof(layer.Y));
+                layer.OnPropertyChanged(nameof(layer.Angle));
+            }
+
+            RotationChanged?.Invoke();
+        }
+
+        public void Redo()
+        {
+            _commandHistory.Redo();
+
+            // Оновлюємо UI
+            if (SelectedLayer != null)
+            {
+                SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Image));
+                SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.X));
+                SelectedLayer.OnPropertyChanged(nameof(SelectedLayer.Y));
+                SliderAngle = GetCurrentSliderAngle(SelectedLayer.Angle);
+            }
+
+            foreach (var layer in Layers)
+            {
+                layer.OnPropertyChanged(nameof(layer.Image));
+                layer.OnPropertyChanged(nameof(layer.X));
+                layer.OnPropertyChanged(nameof(layer.Y));
+                layer.OnPropertyChanged(nameof(layer.Angle));
+            }
+
+            RotationChanged?.Invoke();
         }
     }
 }

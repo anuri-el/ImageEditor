@@ -6,7 +6,7 @@ using System.Windows.Media.Imaging;
 
 namespace ImageEditor.Commands
 {
-    public class ResizeImageCommand : IResizeCommand
+    public class ResizeImageCommand : IResizeCommand, IUndoableCommand
     {
         private readonly LayerModel _layer;
         private readonly double _newWidth;
@@ -14,6 +14,8 @@ namespace ImageEditor.Commands
         private BitmapImage _originalImage;
         private double _originalX;
         private double _originalY;
+
+        public string Description => "Зміна розміру зображення";
 
         public ResizeImageCommand(LayerModel layer, double newWidth, double newHeight)
         {
@@ -40,7 +42,6 @@ namespace ImageEditor.Commands
             {
                 // Resize зображення
                 var resizedImage = ResizeImage(_layer.Image, (int)_newWidth, (int)_newHeight);
-
                 // Оновлюємо зображення (позиція залишається незмінною)
                 _layer.Image = resizedImage;
             }
