@@ -11,20 +11,17 @@ namespace ImageEditor
     {
         public MainViewModel ViewModel => DataContext as MainViewModel;
 
-        // Crop variables
         private bool _isDraggingCrop = false;
         private bool _isResizingCrop = false;
         private Point _cropDragStartPoint;
         private double _cropStartX, _cropStartY, _cropStartWidth, _cropStartHeight;
         private string _cropResizeHandle;
 
-        // Resize variables
         private bool _isResizing = false;
         private Point _resizeStartPoint;
         private double _resizeStartX, _resizeStartY, _resizeStartWidth, _resizeStartHeight;
         private string _resizeHandleType;
 
-        // Layer drag variables
         private bool _isDraggingLayer = false;
         private Point _layerDragStartPoint;
         private double _layerStartX, _layerStartY;
@@ -50,36 +47,29 @@ namespace ImageEditor
 
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            // Не обробляємо в режимі crop або resize
             if (ViewModel.IsCropMode || ViewModel.IsResizeMode) return;
 
             Point click = e.GetPosition(EditorCanvas);
             bool hitLayer = false;
 
-            // Перевіряємо чи клікнули на шар (від верхнього до нижнього)
             for (int i = ViewModel.Layers.Count - 1; i >= 0; i--)
             {
                 var layer = ViewModel.Layers[i];
                 if (layer.Image == null) continue;
 
-                // Центр зображення (точка обертання)
                 double centerX = layer.X + layer.Image.PixelWidth / 2.0;
                 double centerY = layer.Y + layer.Image.PixelHeight / 2.0;
 
-                // Вектор від центру до точки кліку
                 double dx = click.X - centerX;
                 double dy = click.Y - centerY;
 
-                // Зворотнє обертання для перевірки hitTest
                 double angleRad = -layer.Angle * Math.PI / 180.0;
                 double cos = Math.Cos(angleRad);
                 double sin = Math.Sin(angleRad);
 
-                // Локальні координати відносно центру (після зворотного обертання)
                 double localXFromCenter = dx * cos - dy * sin;
                 double localYFromCenter = dx * sin + dy * cos;
 
-                // Перевіряємо чи в межах зображення
                 bool isInside = Math.Abs(localXFromCenter) <= layer.Image.PixelWidth / 2.0 &&
                                Math.Abs(localYFromCenter) <= layer.Image.PixelHeight / 2.0;
 
@@ -87,11 +77,9 @@ namespace ImageEditor
                 {
                     hitLayer = true;
 
-                    // Вибираємо шар
                     ViewModel.SelectLayerCommand.Execute(layer);
                     UpdateSelectionRect();
 
-                    // Права кнопка миші - показуємо Context Menu
                     if (e.RightButton == MouseButtonState.Pressed)
                     {
                         ShowLayerContextMenu(e.GetPosition(this));
@@ -99,7 +87,6 @@ namespace ImageEditor
                         return;
                     }
 
-                    // Ліва кнопка - починаємо dragging
                     if (e.LeftButton == MouseButtonState.Pressed)
                     {
                         _isDraggingLayer = true;
@@ -116,8 +103,6 @@ namespace ImageEditor
                 }
             }
 
-            // Якщо не потрапили ні в один шар - знімаємо виділення
-            // НЕ обертаємо колаж при кліку на пустому місці
             if (!hitLayer)
             {
                 ViewModel.SelectedLayer = null;
@@ -157,14 +142,12 @@ namespace ImageEditor
 
                 UpdateSelectionRect();
 
-                // Змінюємо курсор
                 EditorCanvas.Cursor = Cursors.SizeAll;
 
                 e.Handled = true;
             }
             else if (!ViewModel.IsCropMode && !ViewModel.IsResizeMode)
             {
-                // Перевіряємо чи курсор над зображенням
                 Point mousePos = e.GetPosition(EditorCanvas);
                 bool overImage = false;
 
@@ -202,17 +185,14 @@ namespace ImageEditor
         {
             if (_isDraggingLayer && _draggedLayer != null)
             {
-                // Створюємо команду для undo/redo
                 var moveCommand = new MoveLayerCommand(
                     _draggedLayer,
                     _draggedLayer.X,
                     _draggedLayer.Y);
 
-                // Зберігаємо команду (якщо позиція змінилась)
                 if (Math.Abs(_draggedLayer.X - _layerStartX) > 0.1 ||
                     Math.Abs(_draggedLayer.Y - _layerStartY) > 0.1)
                 {
-                    // Можна зберегти команду для undo
                     ViewModel.ExecuteMoveCommand(moveCommand);
                 }
 
@@ -240,15 +220,12 @@ namespace ImageEditor
                 double w = layer.Image.PixelWidth;
                 double h = layer.Image.PixelHeight;
 
-                // Рамка просто повторює розмір зображення
                 SelectionRect.Width = w;
                 SelectionRect.Height = h;
 
-                // Позиціонуємо рамку на позиції зображення
                 Canvas.SetLeft(SelectionRect, layer.X);
                 Canvas.SetTop(SelectionRect, layer.Y);
 
-                // Обертаємо рамку на той самий кут
                 SelRotate.Angle = layer.Angle;
                 SelRotate.CenterX = w / 2.0;
                 SelRotate.CenterY = h / 2.0;
@@ -259,8 +236,6 @@ namespace ImageEditor
                 System.Diagnostics.Debug.WriteLine($"Error updating selection rect: {ex.Message}");
             }
         }
-
-        // ==================== CROP METHODS ====================
 
         private void UpdateCropGrid()
         {
@@ -462,13 +437,11 @@ namespace ImageEditor
             UpdateCropGrid();
         }
 
-        // ==================== RESIZE METHODS ====================
 
         private void UpdateResizeGrid()
         {
             try
             {
-                // Перевірка чи існують всі UI елементи
                 if (ResizeGridCanvas == null || ResizeBorder == null || EditorCanvas == null)
                 {
                     System.Diagnostics.Debug.WriteLine("Resize UI elements not initialized yet");
@@ -479,7 +452,6 @@ namespace ImageEditor
                 {
                     var resizeArea = ViewModel.ResizeArea;
 
-                    // Перевірка на валідність значень
                     if (double.IsNaN(resizeArea.X) || double.IsNaN(resizeArea.Y) ||
                         double.IsNaN(resizeArea.Width) || double.IsNaN(resizeArea.Height) ||
                         resizeArea.Width <= 0 || resizeArea.Height <= 0)
@@ -489,11 +461,9 @@ namespace ImageEditor
                         return;
                     }
 
-                    // Перевірка чи Canvas має розміри
                     if (EditorCanvas.ActualWidth <= 0 || EditorCanvas.ActualHeight <= 0)
                     {
                         System.Diagnostics.Debug.WriteLine("Canvas not ready yet");
-                        // Спробуємо ще раз після layout update
                         EditorCanvas.UpdateLayout();
 
                         if (EditorCanvas.ActualWidth <= 0 || EditorCanvas.ActualHeight <= 0)
@@ -507,16 +477,13 @@ namespace ImageEditor
                     ResizeGridCanvas.Width = EditorCanvas.ActualWidth;
                     ResizeGridCanvas.Height = EditorCanvas.ActualHeight;
 
-                    // Позиціонуємо resize border
                     Canvas.SetLeft(ResizeBorder, resizeArea.X);
                     Canvas.SetTop(ResizeBorder, resizeArea.Y);
                     ResizeBorder.Width = resizeArea.Width;
                     ResizeBorder.Height = resizeArea.Height;
 
-                    // Перевірка чи існують ручки перед оновленням їх позицій
                     if (ResizeTop != null && ResizeBottom != null && ResizeLeft != null && ResizeRight != null)
                     {
-                        // Оновлюємо позиції бокових ручок (по центру)
                         Canvas.SetLeft(ResizeTop, resizeArea.Width / 2);
                         Canvas.SetLeft(ResizeBottom, resizeArea.Width / 2);
                         Canvas.SetTop(ResizeLeft, resizeArea.Height / 2);
