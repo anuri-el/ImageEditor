@@ -1,6 +1,6 @@
-﻿namespace ImageEditor.Commands
+﻿namespace ImageEditor.Interfaces
 {
-    public interface ILayerOrderCommand
+    public interface IResizeCommand
     {
         void Execute();
         void Undo();

@@ -1,4 +1,5 @@
 ﻿using ImageEditor.Effects;
+using ImageEditor.Interfaces;
 using ImageEditor.Models;
 using System;
 using System.Collections.Generic;
@@ -43,7 +44,9 @@ namespace ImageEditor.Commands
             {
                 if (_selectedLayer != null)
                 {
+                    // Зберігаємо оригінал (Memento)
                     _originalImages[_selectedLayer] = _selectedLayer.Image;
+                    // Застосовуємо ефект (Strategy Pattern)
                     _selectedLayer.Image = _effect.Apply(_selectedLayer.Image);
                 }
                 else

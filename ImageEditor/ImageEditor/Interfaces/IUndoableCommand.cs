@@ -4,12 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ImageEditor.Commands
+namespace ImageEditor.Interfaces
 {
-    public interface IEffectCommand
+    public interface IUndoableCommand
     {
         void Execute();
         void Undo();
         bool CanExecute();
+        string Description { get; }
     }
 }

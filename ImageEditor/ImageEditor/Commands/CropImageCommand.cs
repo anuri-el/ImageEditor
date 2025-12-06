@@ -1,4 +1,5 @@
-﻿using ImageEditor.Models;
+﻿using ImageEditor.Interfaces;
+using ImageEditor.Models;
 using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;

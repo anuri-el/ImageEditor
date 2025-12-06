@@ -45,6 +45,7 @@ namespace ImageEditor
             ViewModel.UpdateCanvasSize(e.NewSize.Width, e.NewSize.Height);
         }
 
+        // Обробка кліку на полотно для виділення шару
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (ViewModel.IsCropMode || ViewModel.IsResizeMode) return;

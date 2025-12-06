@@ -1,5 +1,6 @@
 ﻿using ImageEditor.Commands;
 using ImageEditor.Effects;
+using ImageEditor.Interfaces;
 using ImageEditor.Models;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
@@ -198,8 +199,8 @@ namespace ImageEditor.ViewModels
         public RelayCommand AddImageCommand { get; }
         public RelayCommand SelectLayerCommand { get; }
         public RelayCommand SaveCommand { get; }
-        public ICommand RotateLeftCommand { get; }
-        public ICommand RotateRightCommand { get; }
+        public RelayCommand RotateLeftCommand { get; }
+        public RelayCommand RotateRightCommand { get; }
         public RelayCommand ResetRotationCommand { get; }
         public RelayCommand StartCropCommand { get; }
         public RelayCommand ApplyCropCommand { get; }
@@ -207,34 +208,23 @@ namespace ImageEditor.ViewModels
         public RelayCommand StartResizeCommand { get; }
         public RelayCommand ApplyResizeCommand { get; }
         public RelayCommand CancelResizeCommand { get; }
-
-        private ICropCommand _currentCropCommand;
-        private IResizeCommand _currentResizeCommand;
-        private IMoveCommand _currentMoveCommand;
-
-        private ILayerOrderCommand _currentLayerOrderCommand;
-
         public RelayCommand MoveLayerUpCommand { get; }
         public RelayCommand MoveLayerDownCommand { get; }
         public RelayCommand BringLayerToFrontCommand { get; }
         public RelayCommand SendLayerToBackCommand { get; }
         public RelayCommand DeleteLayerCommand { get; }
+        public RelayCommand DuplicateLayerCommand { get; }
+        public RelayCommand ApplyEffectCommand { get; }
+        public RelayCommand UndoCommand { get; }
+        public RelayCommand RedoCommand { get; }
 
         public ObservableCollection<EffectInfo> AvailableEffects { get; set; }
-        public RelayCommand ApplyEffectCommand { get; }
 
-        private IEffectCommand _currentEffectCommand;
         private CommandHistory _commandHistory = new CommandHistory();
-
-        public RelayCommand UndoEffectCommand { get; }
         public bool CanUndo => _commandHistory.CanUndo;
         public bool CanRedo => _commandHistory.CanRedo;
         public string UndoDescription => _commandHistory.UndoDescription;
         public string RedoDescription => _commandHistory.RedoDescription;
-
-        public RelayCommand UndoCommand { get; }
-        public RelayCommand RedoCommand { get; }
-        public RelayCommand DuplicateLayerCommand { get; }
 
         public MainViewModel()
         {

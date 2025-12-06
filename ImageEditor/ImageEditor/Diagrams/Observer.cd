@@ -17,7 +17,7 @@
       <Compartment Name="Events" Collapsed="true" />
     </Compartments>
     <TypeIdentifier>
-      <HashCode>AywLFlEKVFYkFJFsRCEE6BCBGO5EImg2URQKBqMWsEg=</HashCode>
+      <HashCode>AywLFlEKVFYkFJFMRCEE6BCBGO5AImg2UBQKBqMWsEg=</HashCode>
       <FileName>ViewModels\MainViewModel.cs</FileName>
     </TypeIdentifier>
   </Class>

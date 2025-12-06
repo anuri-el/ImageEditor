@@ -1,4 +1,5 @@
-﻿using ImageEditor.Models;
+﻿using ImageEditor.Interfaces;
+using ImageEditor.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

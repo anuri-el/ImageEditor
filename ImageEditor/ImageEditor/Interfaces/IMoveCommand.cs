@@ -1,6 +1,6 @@
-﻿namespace ImageEditor.Commands
+﻿namespace ImageEditor.Interfaces
 {
-    public interface ICropCommand
+    public interface IMoveCommand
     {
         void Execute();
         void Undo();

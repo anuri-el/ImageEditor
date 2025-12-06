@@ -1,4 +1,5 @@
-﻿using ImageEditor.Models;
+﻿using ImageEditor.Interfaces;
+using ImageEditor.Models;
 using System.Collections.ObjectModel;
 
 namespace ImageEditor.Commands
