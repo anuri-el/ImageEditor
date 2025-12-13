@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="ImageEditor.Commands.ApplyEffectCommand">
+    <Position X="8" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIAAABAgBAQAAEAAAAAAAAAAAAAAAgAAAAAAEAA=</HashCode>
+      <FileName>Commands\ApplyEffectCommand.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ImageEditor.Commands.CommandHistory">
+    <Position X="6.75" Y="0.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AIIAAAAARAAEBAAAAAAAAAAFAAAAAAAoAAAAAAFAIAA=</HashCode>
+      <FileName>Commands\CommandHistory.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ImageEditor.Commands.CropImageCommand">
+    <Position X="6.25" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIAAAIAhBAQAAFAAAAIAAAAAAAAAQAAAAAAAAAA=</HashCode>
+      <FileName>Commands\CropImageCommand.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ImageEditor.Commands.DeleteLayerCommand">
+    <Position X="9.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACAAgBAQAAEAAAAIAAAAAAAAAAAAAAAAAEAA=</HashCode>
+      <FileName>Commands\DeleteLayerCommand.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ImageEditor.Commands.ResizeImageCommand">
+    <Position X="11.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIAAAIAhBAQAAEBAAAIAAAAAAAAAAIAAEAAAAAA=</HashCode>
+      <FileName>Commands\ResizeImageCommand.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ImageEditor.Commands.DuplicateLayerCommand">
+    <Position X="13.25" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAQAAAgBAQAAEAAAAAAAAAAEAQAAAAAAAAAEAA=</HashCode>
+      <FileName>Commands\DuplicateLayerCommand.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Interface Name="ImageEditor.Interfaces.IUndoableCommand">
+    <Position X="10.25" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgBAQAAEAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Interfaces\IUndoableCommand.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

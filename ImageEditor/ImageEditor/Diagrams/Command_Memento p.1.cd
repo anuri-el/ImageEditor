@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1">
   <Class Name="ImageEditor.Commands.RotateCommand">
-    <Position X="17.25" Y="5.5" Width="1.5" />
+    <Position X="15.5" Y="5.5" Width="1.5" />
     <Compartments>
       <Compartment Name="Nested Types" Collapsed="false" />
     </Compartments>
@@ -18,23 +18,15 @@
     </TypeIdentifier>
     <Lollipop Position="0.2" />
   </Class>
-  <Class Name="ImageEditor.Commands.ApplyEffectCommand">
-    <Position X="8" Y="9.25" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAAIAAABAgBAQAAEAAAAAAAAAAAAAAAgAAAAAAEAA=</HashCode>
-      <FileName>Commands\ApplyEffectCommand.cs</FileName>
-    </TypeIdentifier>
-    <Lollipop Position="0.2" />
-  </Class>
   <Class Name="ImageEditor.Commands.CommandHistory">
-    <Position X="6.75" Y="0.5" Width="1.75" />
+    <Position X="8.5" Y="0.5" Width="1.75" />
     <TypeIdentifier>
       <HashCode>AIIAAAAARAAEBAAAAAAAAAAFAAAAAAAoAAAAAAFAIAA=</HashCode>
       <FileName>Commands\CommandHistory.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="ImageEditor.Commands.CropCollageCommand">
-    <Position X="4" Y="5.5" Width="2" />
+    <Position X="7.5" Y="5.5" Width="2" />
     <Compartments>
       <Compartment Name="Nested Types" Collapsed="false" />
     </Compartments>
@@ -48,30 +40,6 @@
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAghAwAAFAAAAAAAAAAAAAAQAAAAAAAEAA=</HashCode>
       <FileName>Commands\CropCollageCommand.cs</FileName>
-    </TypeIdentifier>
-    <Lollipop Position="0.2" />
-  </Class>
-  <Class Name="ImageEditor.Commands.CropImageCommand">
-    <Position X="6.25" Y="5.5" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAAIAAAIAhBAQAAFAAAAIAAAAAAAAAQAAAAAAAAAA=</HashCode>
-      <FileName>Commands\CropImageCommand.cs</FileName>
-    </TypeIdentifier>
-    <Lollipop Position="0.2" />
-  </Class>
-  <Class Name="ImageEditor.Commands.DeleteLayerCommand">
-    <Position X="11.5" Y="9.25" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAACAAgBAQAAEAAAAIAAAAAAAAAAAAAAAAAEAA=</HashCode>
-      <FileName>Commands\DeleteLayerCommand.cs</FileName>
-    </TypeIdentifier>
-    <Lollipop Position="0.2" />
-  </Class>
-  <Class Name="ImageEditor.Commands.DuplicateLayerCommand">
-    <Position X="8" Y="5.5" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAQAAAgBAQAAEAAAAAAAAAAEAQAAAAAAAAAEAA=</HashCode>
-      <FileName>Commands\DuplicateLayerCommand.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" />
   </Class>
@@ -109,16 +77,8 @@
     </TypeIdentifier>
     <Lollipop Position="0.2" />
   </Class>
-  <Class Name="ImageEditor.Commands.ResizeImageCommand">
-    <Position X="15.5" Y="5.5" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAAIAAAIAhBAQAAEBAAAIAAAAAAAAAAIAAEAAAAAA=</HashCode>
-      <FileName>Commands\ResizeImageCommand.cs</FileName>
-    </TypeIdentifier>
-    <Lollipop Position="0.2" />
-  </Class>
   <Interface Name="ImageEditor.Interfaces.IUndoableCommand">
-    <Position X="10.5" Y="2" Width="1.5" />
+    <Position X="12.25" Y="2.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAgBAQAAEAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>Interfaces\IUndoableCommand.cs</FileName>
